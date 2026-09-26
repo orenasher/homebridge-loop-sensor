@@ -29,9 +29,24 @@
               "type": "string",
               "default": "switch",
               "oneOf": [
-                { "title": "Switch", "enum": ["switch"] },
-                { "title": "Outlet", "enum": ["outlet"] },
-                { "title": "Lightbulb", "enum": ["lightbulb"] }
+                {
+                  "title": "Switch",
+                  "enum": [
+                    "switch"
+                  ]
+                },
+                {
+                  "title": "Outlet",
+                  "enum": [
+                    "outlet"
+                  ]
+                },
+                {
+                  "title": "Lightbulb",
+                  "enum": [
+                    "lightbulb"
+                  ]
+                }
               ]
             },
             "sensorType": {
@@ -39,10 +54,30 @@
               "type": "string",
               "default": "contact",
               "oneOf": [
-                { "title": "Contact (דלת/חלון)", "enum": ["contact"] },
-                { "title": "Motion (תנועה)", "enum": ["motion"] },
-                { "title": "Occupancy (נוכחות)", "enum": ["occupancy"] },
-                { "title": "Leak (נזילה - התראה קריטית)", "enum": ["leak"] }
+                {
+                  "title": "Contact (דלת/חלון)",
+                  "enum": [
+                    "contact"
+                  ]
+                },
+                {
+                  "title": "Motion (תנועה)",
+                  "enum": [
+                    "motion"
+                  ]
+                },
+                {
+                  "title": "Occupancy (נוכחות)",
+                  "enum": [
+                    "occupancy"
+                  ]
+                },
+                {
+                  "title": "Leak (נזילה - התראה קריטית)",
+                  "enum": [
+                    "leak"
+                  ]
+                }
               ]
             },
             "interval": {
@@ -57,9 +92,24 @@
               "type": "string",
               "default": "minutes",
               "oneOf": [
-                { "title": "Seconds", "enum": ["seconds"] },
-                { "title": "Minutes", "enum": ["minutes"] },
-                { "title": "Hours", "enum": ["hours"] }
+                {
+                  "title": "Seconds",
+                  "enum": [
+                    "seconds"
+                  ]
+                },
+                {
+                  "title": "Minutes",
+                  "enum": [
+                    "minutes"
+                  ]
+                },
+                {
+                  "title": "Hours",
+                  "enum": [
+                    "hours"
+                  ]
+                }
               ]
             },
             "pulseSeconds": {
@@ -107,32 +157,67 @@
     {
       "key": "loops",
       "type": "array",
+      "notitle": true,
       "orderable": false,
       "buttonText": "הוסף לופ",
       "items": [
-        "loops[].name",
-        {
-          "type": "flex",
-          "flex-flow": "row wrap",
-          "items": ["loops[].switchType", "loops[].sensorType"]
-        },
-        {
-          "type": "flex",
-          "flex-flow": "row wrap",
-          "items": ["loops[].interval", "loops[].intervalUnit", "loops[].pulseSeconds"]
-        },
         {
           "type": "fieldset",
-          "title": "אפשרויות נוספות",
+          "title": "לופ",
           "expandable": true,
-          "expanded": false,
+          "expanded": true,
           "items": [
-            "loops[].pulseOnStart",
-            "loops[].autoOffMinutes",
-            "loops[].rememberState",
-            "loops[].switchName",
-            "loops[].sensorName",
-            "loops[].debug"
+            "loops[].name",
+            {
+              "type": "div",
+              "displayFlex": true,
+              "flex-direction": "row",
+              "notitle": true,
+              "items": [
+                {
+                  "key": "loops[].switchType",
+                  "flex": "1 1 0"
+                },
+                {
+                  "key": "loops[].sensorType",
+                  "flex": "1 1 0"
+                }
+              ]
+            },
+            {
+              "type": "div",
+              "displayFlex": true,
+              "flex-direction": "row",
+              "notitle": true,
+              "items": [
+                {
+                  "key": "loops[].interval",
+                  "flex": "1 1 0"
+                },
+                {
+                  "key": "loops[].intervalUnit",
+                  "flex": "1 1 0"
+                },
+                {
+                  "key": "loops[].pulseSeconds",
+                  "flex": "1 1 0"
+                }
+              ]
+            },
+            {
+              "type": "fieldset",
+              "title": "אפשרויות נוספות",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                "loops[].pulseOnStart",
+                "loops[].autoOffMinutes",
+                "loops[].rememberState",
+                "loops[].switchName",
+                "loops[].sensorName",
+                "loops[].debug"
+              ]
+            }
           ]
         }
       ]
