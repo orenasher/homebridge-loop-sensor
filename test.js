@@ -156,3 +156,22 @@ test('min interval clamp, other sensor types, auto-off, remember state', () => {
   restored.stop();
   mock.timers.reset();
 });
+
+test('startMode afterInterval waits a full interval before first pulse', () => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  const { platform } = boot({ loops: [
+    { name: 'Late', interval: 2, intervalUnit: 'minutes', startMode: 'afterInterval' },
+    { name: 'Now', interval: 2, intervalUnit: 'minutes', startMode: 'immediate' },
+  ] });
+  const [late, now] = platform.loops;
+  late.onChar.setter(true);
+  now.onChar.setter(true);
+  assert.strictEqual(late.sensorChar.value, 0, 'afterInterval: sensor stays off at start');
+  assert.strictEqual(now.sensorChar.value, 1, 'immediate: sensor pulses at start');
+  for (let i = 0; i < 119; i++) mock.timers.tick(1000);
+  assert.strictEqual(late.sensorChar.value, 0, 'still off at 1:59');
+  mock.timers.tick(1000);
+  assert.strictEqual(late.sensorChar.value, 1, 'first pulse at 2:00');
+  late.stop(); now.stop();
+  mock.timers.reset();
+});

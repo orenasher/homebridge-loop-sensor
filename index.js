@@ -99,7 +99,9 @@ class Loop {
     this.intervalMs = Math.max(MIN_INTERVAL_MS, Math.round(interval * UNIT_MS[unit]));
     const pulseSec = Number(cfg.pulseSeconds) > 0 ? Number(cfg.pulseSeconds) : 2;
     this.pulseMs = Math.min(Math.round(pulseSec * 1000), this.intervalMs - 1000);
-    this.pulseOnStart = cfg.pulseOnStart !== false;
+    this.pulseOnStart = cfg.startMode
+      ? cfg.startMode !== 'afterInterval'
+      : cfg.pulseOnStart !== false;
     this.remember = cfg.rememberState !== false;
     this.autoOffMs = Number(cfg.autoOffMinutes) > 0 ? Math.round(cfg.autoOffMinutes * 60000) : 0;
 

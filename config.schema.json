@@ -119,10 +119,24 @@
               "minimum": 1,
               "maximum": 60
             },
-            "pulseOnStart": {
-              "title": "להפעיל את החיישן מיד כשהמתג נדלק",
-              "type": "boolean",
-              "default": true
+            "startMode": {
+              "title": "מתי הלופ מתחיל (Start)",
+              "type": "string",
+              "default": "immediate",
+              "oneOf": [
+                {
+                  "title": "מיד כשהמתג נדלק",
+                  "enum": [
+                    "immediate"
+                  ]
+                },
+                {
+                  "title": "אחרי הזמן שנבחר (למשל 2 דקות)",
+                  "enum": [
+                    "afterInterval"
+                  ]
+                }
+              ]
             },
             "autoOffMinutes": {
               "title": "כיבוי אוטומטי של המתג אחרי X דקות (0 = אף פעם)",
@@ -204,13 +218,13 @@
                 }
               ]
             },
+            "loops[].startMode",
             {
               "type": "fieldset",
               "title": "אפשרויות נוספות",
               "expandable": true,
               "expanded": false,
               "items": [
-                "loops[].pulseOnStart",
                 "loops[].autoOffMinutes",
                 "loops[].rememberState",
                 "loops[].switchName",

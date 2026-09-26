@@ -12,7 +12,7 @@ A HomeKit switch that pulses a sensor every X minutes while it's on. When the sw
 - סוג חיישן לבחירה: Contact, Motion, Occupancy, Leak (התראה קריטית)
 - סוג מתג לבחירה: Switch, Outlet, Lightbulb
 - משך "הדלקה" של החיישן (שניות)
-- הפעלה מיידית של החיישן כשהמתג נדלק (אפשר לכבות)
+- בחירה מתי הלופ מתחיל: מיד כשהמתג נדלק, או רק אחרי הזמן שנבחר
 - כיבוי אוטומטי של המתג אחרי X דקות (אופציונלי)
 - זוכר את מצב המתג אחרי הפעלה מחדש של Homebridge
 - קל: טיימר אחד לכל לופ, ורק כשהמתג דלוק. בלי לוג על כל הפעלה (אלא אם מסמנים Debug)
@@ -43,7 +43,7 @@ A HomeKit switch that pulses a sensor every X minutes while it's on. When the sw
 | `sensorType` | `contact` | `contact` / `motion` / `occupancy` / `leak` |
 | `interval` + `intervalUnit` | `2` `minutes` | כל כמה זמן החיישן נדלק (מינימום 10 שניות) |
 | `pulseSeconds` | `2` | כמה זמן החיישן נשאר דלוק |
-| `pulseOnStart` | `true` | להדליק את החיישן מיד כשהמתג נדלק |
+| `startMode` | `immediate` | `immediate` = החיישן נדלק מיד עם המתג, `afterInterval` = ההפעלה הראשונה רק אחרי הזמן שנבחר |
 | `autoOffMinutes` | `0` | כיבוי אוטומטי של המתג (0 = אף פעם) |
 | `rememberState` | `true` | לשחזר את מצב המתג אחרי ריסטארט |
 | `switchName` / `sensorName` | – | שמות מותאמים |
