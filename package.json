@@ -1,0 +1,40 @@
+{
+  "name": "homebridge-loop-sensor",
+  "displayName": "Loop Sensor",
+  "version": "1.0.0",
+  "description": "A switch that pulses a HomeKit sensor every X minutes while it's on. Great for repeating automations (e.g. 'window open while AC is on' alerts).",
+  "main": "index.js",
+  "author": "Oren Asher",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orenasher/homebridge-loop-sensor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/orenasher/homebridge-loop-sensor/issues"
+  },
+  "homepage": "https://github.com/orenasher/homebridge-loop-sensor#readme",
+  "keywords": [
+    "homebridge-plugin",
+    "homekit",
+    "loop",
+    "timer",
+    "interval",
+    "sensor",
+    "switch",
+    "automation"
+  ],
+  "engines": {
+    "node": "^18.20.4 || ^20.15.1 || ^22 || ^24",
+    "homebridge": "^1.8.0 || ^2.0.0-beta.0"
+  },
+  "files": [
+    "index.js",
+    "config.schema.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test.js"
+  }
+}

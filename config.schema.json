@@ -1,0 +1,141 @@
+{
+  "pluginAlias": "LoopSensor",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "מתג שמפעיל חיישן בלופים: כשהמתג דלוק, החיישן נדלק לרגע כל X זמן. כשהמתג כבוי, הכל עוצר.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Platform Name",
+        "type": "string",
+        "default": "Loop Sensor",
+        "required": true
+      },
+      "loops": {
+        "title": "Loops",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "שם (Name)",
+              "type": "string",
+              "required": true,
+              "placeholder": "לופ מזגן"
+            },
+            "switchType": {
+              "title": "סוג מתג (Switch type)",
+              "type": "string",
+              "default": "switch",
+              "oneOf": [
+                { "title": "Switch", "enum": ["switch"] },
+                { "title": "Outlet", "enum": ["outlet"] },
+                { "title": "Lightbulb", "enum": ["lightbulb"] }
+              ]
+            },
+            "sensorType": {
+              "title": "סוג חיישן (Sensor type)",
+              "type": "string",
+              "default": "contact",
+              "oneOf": [
+                { "title": "Contact (דלת/חלון)", "enum": ["contact"] },
+                { "title": "Motion (תנועה)", "enum": ["motion"] },
+                { "title": "Occupancy (נוכחות)", "enum": ["occupancy"] },
+                { "title": "Leak (נזילה - התראה קריטית)", "enum": ["leak"] }
+              ]
+            },
+            "interval": {
+              "title": "כל כמה זמן (Interval)",
+              "type": "number",
+              "default": 2,
+              "minimum": 1,
+              "required": true
+            },
+            "intervalUnit": {
+              "title": "יחידות (Units)",
+              "type": "string",
+              "default": "minutes",
+              "oneOf": [
+                { "title": "Seconds", "enum": ["seconds"] },
+                { "title": "Minutes", "enum": ["minutes"] },
+                { "title": "Hours", "enum": ["hours"] }
+              ]
+            },
+            "pulseSeconds": {
+              "title": "כמה שניות החיישן דולק (Pulse seconds)",
+              "type": "number",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 60
+            },
+            "pulseOnStart": {
+              "title": "להפעיל את החיישן מיד כשהמתג נדלק",
+              "type": "boolean",
+              "default": true
+            },
+            "autoOffMinutes": {
+              "title": "כיבוי אוטומטי של המתג אחרי X דקות (0 = אף פעם)",
+              "type": "number",
+              "default": 0,
+              "minimum": 0
+            },
+            "rememberState": {
+              "title": "לזכור מצב מתג אחרי הפעלה מחדש של Homebridge",
+              "type": "boolean",
+              "default": true
+            },
+            "switchName": {
+              "title": "שם המתג (אופציונלי)",
+              "type": "string"
+            },
+            "sensorName": {
+              "title": "שם החיישן (אופציונלי)",
+              "type": "string"
+            },
+            "debug": {
+              "title": "לוג לכל הפעלת חיישן (Debug)",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      }
+    }
+  },
+  "layout": [
+    {
+      "key": "loops",
+      "type": "array",
+      "orderable": false,
+      "buttonText": "הוסף לופ",
+      "items": [
+        "loops[].name",
+        {
+          "type": "flex",
+          "flex-flow": "row wrap",
+          "items": ["loops[].switchType", "loops[].sensorType"]
+        },
+        {
+          "type": "flex",
+          "flex-flow": "row wrap",
+          "items": ["loops[].interval", "loops[].intervalUnit", "loops[].pulseSeconds"]
+        },
+        {
+          "type": "fieldset",
+          "title": "אפשרויות נוספות",
+          "expandable": true,
+          "expanded": false,
+          "items": [
+            "loops[].pulseOnStart",
+            "loops[].autoOffMinutes",
+            "loops[].rememberState",
+            "loops[].switchName",
+            "loops[].sensorName",
+            "loops[].debug"
+          ]
+        }
+      ]
+    }
+  ]
+}
