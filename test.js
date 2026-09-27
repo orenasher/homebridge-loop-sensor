@@ -175,3 +175,40 @@ test('startMode afterInterval waits a full interval before first pulse', () => {
   late.stop(); now.stop();
   mock.timers.reset();
 });
+
+test('once mode: countdown, single pulse, switch turns off, survives restart', () => {
+  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const cfg = { loops: [{ name: 'Timer', mode: 'once', interval: 30, intervalUnit: 'minutes' }] };
+  const { platform, api } = boot(cfg);
+  const t = platform.loops[0];
+  t.onChar.setter(true);
+  assert.strictEqual(t.sensorChar.value, 0, 'no pulse at start');
+  assert.strictEqual(t.onChar.value, true);
+  for (let i = 0; i < 29 * 60; i++) mock.timers.tick(1000);
+  assert.strictEqual(t.sensorChar.value, 0, 'still waiting at 29 min');
+
+  // restart Homebridge at minute 29 -> countdown resumes with ~1 min left
+  platform.loops.forEach((l) => l.stop(false));
+  const again = boot(cfg, api.registered);
+  const r = again.platform.loops[0];
+  assert.strictEqual(r.running, true, 'countdown restored');
+  for (let i = 0; i < 59; i++) mock.timers.tick(1000);
+  assert.strictEqual(r.sensorChar.value, 0);
+  mock.timers.tick(1000);
+  assert.strictEqual(r.sensorChar.value, 1, 'single pulse at 30 min');
+  assert.strictEqual(r.onChar.value, false, 'switch turned off');
+  assert.strictEqual(r.running, false);
+  mock.timers.tick(2000);
+  assert.strictEqual(r.sensorChar.value, 0, 'sensor back to idle');
+  const n = r.sensorChar.history.length;
+  for (let i = 0; i < 3600; i++) mock.timers.tick(1000);
+  assert.strictEqual(r.sensorChar.history.length, n, 'nothing more happens');
+
+  // cancel: turning off before time is up -> no pulse
+  r.onChar.setter(true);
+  for (let i = 0; i < 60; i++) mock.timers.tick(1000);
+  r.onChar.setter(false);
+  for (let i = 0; i < 3600; i++) mock.timers.tick(1000);
+  assert.ok(!r.sensorChar.history.slice(n).includes(1), 'cancelled countdown never pulses');
+  mock.timers.reset();
+});

@@ -9,6 +9,7 @@ A HomeKit switch that pulses a sensor every X minutes while it's on. When the sw
 
 ## תכונות
 - כמה לופים שרוצים, לכל אחד זמן משלו (שניות / דקות / שעות)
+- שני מצבים: **לופ** (חוזר כל X זמן) או **פעם אחת** (ספירה לאחור – החיישן נדלק פעם אחת והמתג נכבה לבד)
 - סוג חיישן לבחירה: Contact, Motion, Occupancy, Leak (התראה קריטית)
 - סוג מתג לבחירה: Switch, Outlet, Lightbulb
 - משך "הדלקה" של החיישן (שניות)
@@ -39,6 +40,7 @@ A HomeKit switch that pulses a sensor every X minutes while it's on. When the sw
 | שדה | ברירת מחדל | הסבר |
 |---|---|---|
 | `name` | – | שם הלופ (חובה) |
+| `mode` | `loop` | `loop` = חוזר כל X זמן, `once` = ספירה לאחור, החיישן נדלק פעם אחת והמתג נכבה |
 | `switchType` | `switch` | `switch` / `outlet` / `lightbulb` |
 | `sensorType` | `contact` | `contact` / `motion` / `occupancy` / `leak` |
 | `interval` + `intervalUnit` | `2` `minutes` | כל כמה זמן החיישן נדלק (מינימום 10 שניות) |

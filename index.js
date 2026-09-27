@@ -99,6 +99,7 @@ class Loop {
     this.intervalMs = Math.max(MIN_INTERVAL_MS, Math.round(interval * UNIT_MS[unit]));
     const pulseSec = Number(cfg.pulseSeconds) > 0 ? Number(cfg.pulseSeconds) : 2;
     this.pulseMs = Math.min(Math.round(pulseSec * 1000), this.intervalMs - 1000);
+    this.once = cfg.mode === 'once';
     this.pulseOnStart = cfg.startMode
       ? cfg.startMode !== 'afterInterval'
       : cfg.pulseOnStart !== false;
@@ -144,6 +145,7 @@ class Loop {
     const wasOn = this.remember && accessory.context.on === true;
     this.onChar.updateValue(false);
     if (wasOn) this.start(true);
+    else delete accessory.context.endAt;
   }
 
   setNames(service, name) {
@@ -159,6 +161,19 @@ class Loop {
     this.running = true;
     this.accessory.context.on = true;
     this.onChar.updateValue(true);
+
+    if (this.once) {
+      // Countdown: pulse the sensor once when time is up, then turn the switch off.
+      const now = Date.now();
+      const saved = Number(this.accessory.context.endAt);
+      const endAt = restoring && saved ? saved : now + this.intervalMs;
+      this.accessory.context.endAt = endAt;
+      const remaining = Math.max(1000, endAt - now);
+      this.log.info(`${this.name}: countdown started (${Math.round(remaining / 1000)}s)${restoring ? ' [restored]' : ''}`);
+      this.cycleTimer = setTimeout(() => this.finishOnce(), remaining);
+      return;
+    }
+
     this.log.info(`${this.name}: loop started (every ${this.intervalMs / 1000}s)${restoring ? ' [restored]' : ''}`);
 
     if (this.pulseOnStart && !restoring) this.pulse();
@@ -180,7 +195,10 @@ class Loop {
     this.sensorChar.updateValue(this.sensorDef.idle(this.C));
     if (!this.running) return;
     this.running = false;
-    if (persist) this.accessory.context.on = false;
+    if (persist) {
+      this.accessory.context.on = false;
+      delete this.accessory.context.endAt;
+    }
     this.onChar.updateValue(false);
     this.log.info(`${this.name}: loop stopped`);
   }
@@ -192,6 +210,17 @@ class Loop {
       this.pulse();
       this.schedule();
     }, this.intervalMs);
+  }
+
+  finishOnce() {
+    if (!this.running) return;
+    this.cycleTimer = null;
+    this.running = false;
+    this.accessory.context.on = false;
+    delete this.accessory.context.endAt;
+    this.pulse();
+    this.onChar.updateValue(false);
+    this.log.info(`${this.name}: countdown finished`);
   }
 
   pulse() {

@@ -80,8 +80,27 @@
                 }
               ]
             },
+            "mode": {
+              "title": "מצב (Mode)",
+              "type": "string",
+              "default": "loop",
+              "oneOf": [
+                {
+                  "title": "לופ – החיישן נדלק כל X זמן עד שמכבים את המתג",
+                  "enum": [
+                    "loop"
+                  ]
+                },
+                {
+                  "title": "פעם אחת – ספירה לאחור, החיישן נדלק פעם אחת והמתג נכבה",
+                  "enum": [
+                    "once"
+                  ]
+                }
+              ]
+            },
             "interval": {
-              "title": "כל כמה זמן (Interval)",
+              "title": "זמן (כל כמה זמן / ספירה לאחור)",
               "type": "number",
               "default": 2,
               "minimum": 1,
@@ -182,6 +201,7 @@
           "expanded": true,
           "items": [
             "loops[].name",
+            "loops[].mode",
             {
               "type": "div",
               "displayFlex": true,
@@ -218,14 +238,24 @@
                 }
               ]
             },
-            "loops[].startMode",
+            {
+              "key": "loops[].startMode",
+              "condition": {
+                "functionBody": "return model.loops?.[arguments[1]]?.mode !== 'once';"
+              }
+            },
             {
               "type": "fieldset",
               "title": "אפשרויות נוספות",
               "expandable": true,
               "expanded": false,
               "items": [
-                "loops[].autoOffMinutes",
+                {
+                  "key": "loops[].autoOffMinutes",
+                  "condition": {
+                    "functionBody": "return model.loops?.[arguments[1]]?.mode !== 'once';"
+                  }
+                },
                 "loops[].rememberState",
                 "loops[].switchName",
                 "loops[].sensorName",
