@@ -28,29 +28,17 @@ class LoopSensorPlatform {
   }
 
   setup() {
-    const items = Array.isArray(this.config.loops) ? this.config.loops : [];
     const seen = new Set();
+    const loops = Array.isArray(this.config.loops) ? this.config.loops : [];
+    const guards = Array.isArray(this.config.guards) ? this.config.guards : [];
 
-    items.forEach((item, i) => {
-      if (!item || !item.name) {
-        this.log.warn(`Loop #${i + 1} has no name, skipping`);
-        return;
-      }
-      const uuid = this.api.hap.uuid.generate(`${PLUGIN_NAME}:${item.id || item.name}`);
-      if (seen.has(uuid)) {
-        this.log.warn(`Duplicate loop name "${item.name}", skipping`);
-        return;
-      }
-      seen.add(uuid);
-
-      let accessory = this.cached.get(uuid);
-      const isNew = !accessory;
-      if (isNew) accessory = new this.api.platformAccessory(item.name, uuid);
-
-      this.loops.push(new Loop(this, accessory, item));
-
-      if (isNew) this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-      else this.api.updatePlatformAccessories([accessory]);
+    loops.forEach((item, i) => {
+      const accessory = this.prepare(item, `${item && (item.id || item.name)}`, 'Loop', i, seen);
+      if (accessory) this.finish(accessory, new Loop(this, accessory, item));
+    });
+    guards.forEach((item, i) => {
+      const accessory = this.prepare(item, `guard:${item && (item.id || item.name)}`, 'Guard', i, seen);
+      if (accessory) this.finish(accessory, new Guard(this, accessory, item));
     });
 
     const stale = [...this.cached.values()].filter((a) => !seen.has(a.UUID));
@@ -58,6 +46,29 @@ class LoopSensorPlatform {
       this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, stale);
       this.log.info(`Removed ${stale.length} old accessory(ies)`);
     }
+  }
+
+  prepare(item, key, kind, i, seen) {
+    if (!item || !item.name) {
+      this.log.warn(`${kind} #${i + 1} has no name, skipping`);
+      return null;
+    }
+    const uuid = this.api.hap.uuid.generate(`${PLUGIN_NAME}:${key}`);
+    if (seen.has(uuid)) {
+      this.log.warn(`Duplicate ${kind} name "${item.name}", skipping`);
+      return null;
+    }
+    seen.add(uuid);
+    const accessory = this.cached.get(uuid) || new this.api.platformAccessory(item.name, uuid);
+    accessory._isNew = !this.cached.has(uuid);
+    return accessory;
+  }
+
+  finish(accessory, handler) {
+    this.loops.push(handler);
+    if (accessory._isNew) this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+    else this.api.updatePlatformAccessories([accessory]);
+    delete accessory._isNew;
   }
 }
 
@@ -233,5 +244,136 @@ class Loop {
   }
 }
 
+// Guard: fires the output sensor once when the condition switch ("AC") is on
+// AND at least one input ("window") switch is on, continuously for X time.
+// Closing all inputs or turning the condition off cancels the countdown.
+class Guard {
+  constructor(platform, accessory, cfg) {
+    const { Service: S, Characteristic: C } = platform.api.hap;
+    this.log = platform.log;
+    this.C = C;
+    this.accessory = accessory;
+    this.name = cfg.name;
+
+    const unit = UNIT_MS[cfg.delayUnit] ? cfg.delayUnit : 'minutes';
+    const delay = Number(cfg.delay) > 0 ? Number(cfg.delay) : 30;
+    this.delayMs = Math.max(MIN_INTERVAL_MS, Math.round(delay * UNIT_MS[unit]));
+    this.pulseMs = Math.round((Number(cfg.pulseSeconds) > 0 ? Number(cfg.pulseSeconds) : 2) * 1000);
+    this.sensorDef = SENSORS[cfg.sensorType] || SENSORS.contact;
+    const remember = cfg.rememberState !== false;
+
+    accessory.getService(S.AccessoryInformation)
+      .setCharacteristic(C.Manufacturer, 'Oren Asher')
+      .setCharacteristic(C.Model, 'Loop Sensor Guard')
+      .setCharacteristic(C.SerialNumber, accessory.UUID.slice(0, 12));
+
+    const inputNames = [...new Set((Array.isArray(cfg.inputs) ? cfg.inputs : [])
+      .map((x) => (typeof x === 'string' ? x : x && x.name) || '')
+      .map((x) => x.trim())
+      .filter(Boolean))];
+    if (!inputNames.length) this.log.warn(`${this.name}: no windows/doors configured`);
+
+    const ctx = accessory.context;
+    ctx.states = remember && ctx.states ? ctx.states : {};
+
+    const wanted = new Map();
+    const condName = (cfg.conditionName || 'מזגן').trim();
+    wanted.set('cond', { type: S.Switch, name: condName });
+    inputNames.forEach((n) => wanted.set(`in:${n}`, { type: S.Switch, name: n }));
+    const outName = cfg.sensorName || `${this.name}`;
+    wanted.set('out', { type: S[this.sensorDef.service], name: outName });
+
+    // remove services from old configs (renamed/removed windows, changed sensor type)
+    accessory.services
+      .filter((svc) => svc.UUID !== S.AccessoryInformation.UUID)
+      .filter((svc) => {
+        const w = wanted.get(svc.subtype);
+        return !w || w.type.UUID !== svc.UUID;
+      })
+      .forEach((svc) => {
+        delete ctx.states[svc.subtype];
+        accessory.removeService(svc);
+      });
+
+    this.switches = {};
+    for (const [sub, w] of wanted) {
+      const svc = accessory.getServiceById(w.type, sub) || accessory.addService(w.type, w.name, sub);
+      setNames(C, svc, w.name);
+      if (sub === 'out') {
+        this.sensorChar = svc.getCharacteristic(C[this.sensorDef.char]);
+        this.sensorChar.updateValue(this.sensorDef.idle(C));
+        continue;
+      }
+      const ch = svc.getCharacteristic(C.On);
+      ch.onGet(() => !!ctx.states[sub]).onSet((v) => this.setInput(sub, !!v));
+      ch.updateValue(!!ctx.states[sub]);
+      this.switches[sub] = ch;
+    }
+    for (const k of Object.keys(ctx.states)) if (!wanted.has(k)) delete ctx.states[k];
+
+    this.timer = null;
+    this.pulseTimer = null;
+    if (!remember) delete ctx.endAt;
+    this.evaluate(true);
+  }
+
+  armed() {
+    const st = this.accessory.context.states;
+    return !!st.cond && Object.keys(st).some((k) => k.startsWith('in:') && st[k]);
+  }
+
+  setInput(sub, value) {
+    const st = this.accessory.context.states;
+    if (!!st[sub] === value) return;
+    st[sub] = value;
+    this.evaluate(false);
+  }
+
+  evaluate(restoring) {
+    const ctx = this.accessory.context;
+    if (!this.armed()) {
+      if (this.timer || ctx.endAt) this.log.info(`${this.name}: countdown cancelled`);
+      clearTimeout(this.timer);
+      this.timer = null;
+      delete ctx.endAt;
+      ctx.fired = false;
+      return;
+    }
+    if (this.timer || ctx.fired) return; // already counting, or already fired this cycle
+    const now = Date.now();
+    if (!(restoring && ctx.endAt)) ctx.endAt = now + this.delayMs;
+    const remaining = Math.max(1000, ctx.endAt - now);
+    this.log.info(`${this.name}: countdown started (${Math.round(remaining / 1000)}s)${restoring ? ' [restored]' : ''}`);
+    this.timer = setTimeout(() => this.fire(), remaining);
+  }
+
+  fire() {
+    this.timer = null;
+    const ctx = this.accessory.context;
+    delete ctx.endAt;
+    if (!this.armed()) return;
+    ctx.fired = true; // fire once per cycle; re-arms after cancel (AC off / all closed)
+    this.log.info(`${this.name}: time is up -> sensor triggered`);
+    clearTimeout(this.pulseTimer);
+    this.sensorChar.updateValue(this.sensorDef.active(this.C));
+    this.pulseTimer = setTimeout(() => this.sensorChar.updateValue(this.sensorDef.idle(this.C)), this.pulseMs);
+  }
+
+  stop() {
+    clearTimeout(this.timer);
+    clearTimeout(this.pulseTimer);
+    this.timer = this.pulseTimer = null;
+  }
+}
+
+function setNames(C, service, name) {
+  service.setCharacteristic(C.Name, name);
+  if (C.ConfiguredName && !service.testCharacteristic(C.ConfiguredName)) {
+    service.addOptionalCharacteristic(C.ConfiguredName);
+    service.setCharacteristic(C.ConfiguredName, name);
+  }
+}
+
 module.exports.Loop = Loop;
+module.exports.Guard = Guard;
 module.exports.LoopSensorPlatform = LoopSensorPlatform;

@@ -212,3 +212,57 @@ test('once mode: countdown, single pulse, switch turns off, survives restart', (
   assert.ok(!r.sensorChar.history.slice(n).includes(1), 'cancelled countdown never pulses');
   mock.timers.reset();
 });
+
+test('guard: AC on + any window open for delay -> fires once; all closed cancels', () => {
+  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const cfg = { guards: [{ name: 'Guard', delay: 30, delayUnit: 'minutes', inputs: ['W1', 'W2', 'W3'] }] };
+  const { platform, api } = boot(cfg);
+  const g = platform.loops[0];
+  const sw = g.switches;
+  const tick = (sec) => { for (let i = 0; i < sec; i++) mock.timers.tick(1000); };
+
+  sw['in:W1'].setter(true);          // window open, AC off
+  tick(3600);
+  assert.strictEqual(g.sensorChar.value, 0, 'no fire without AC');
+
+  sw.cond.setter(true);              // AC on -> start
+  tick(10 * 60);
+  sw['in:W2'].setter(true);          // second window: keep counting
+  sw['in:W1'].setter(false);         // one closes, W2 still open: keep counting
+  tick(19 * 60 + 59);
+  assert.strictEqual(g.sensorChar.value, 0);
+  tick(1);
+  assert.strictEqual(g.sensorChar.value, 1, 'fires at 30 min');
+  tick(2);
+  assert.strictEqual(g.sensorChar.value, 0);
+  const n = g.sensorChar.history.length;
+  tick(3 * 3600);
+  assert.strictEqual(g.sensorChar.history.length, n, 'fires only once per cycle');
+
+  // AC off/on -> new cycle; closing all windows cancels
+  sw.cond.setter(false);
+  sw.cond.setter(true);
+  tick(20 * 60);
+  sw['in:W2'].setter(false);         // all closed -> cancel
+  tick(3600);
+  assert.strictEqual(g.sensorChar.history.length, n, 'cancelled');
+  sw['in:W3'].setter(true);          // reopen -> restarts from zero
+  tick(29 * 60);
+  assert.strictEqual(g.sensorChar.history.length, n, 'restarted from zero');
+
+  // restart Homebridge at 29 min -> resumes, fires 1 min later
+  platform.loops.forEach((l) => l.stop(false));
+  const again = boot(cfg, api.registered);
+  const r = again.platform.loops[0];
+  assert.strictEqual(r.switches['in:W3'].getter(), true, 'input state restored');
+  tick(60);
+  assert.strictEqual(r.sensorChar.value, 1, 'fires after restart on time');
+
+  // removing a window from config removes its switch
+  r.stop();
+  const third = boot({ guards: [{ name: 'Guard', inputs: ['W1', 'W3'] }] }, again.api.registered);
+  const svcSubs = third.platform.loops[0].accessory.services.map((s) => s.subtype);
+  assert.ok(!svcSubs.includes('in:W2'), 'W2 removed');
+  third.platform.loops[0].stop();
+  mock.timers.reset();
+});

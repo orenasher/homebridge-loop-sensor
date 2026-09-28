@@ -2,7 +2,7 @@
   "pluginAlias": "LoopSensor",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "מתג שמפעיל חיישן בלופים: כשהמתג דלוק, החיישן נדלק לרגע כל X זמן. כשהמתג כבוי, הכל עוצר.",
+  "headerDisplay": "**לופים:** מתג שמפעיל חיישן כל X זמן, או פעם אחת אחרי ספירה לאחור.\n\n**שומר חלונות:** חיישן שנדלק כשהמזגן דלוק וחלון כלשהו פתוח במשך X זמן (למשל כדי לכבות את המזגן).",
   "schema": {
     "type": "object",
     "properties": {
@@ -183,10 +183,122 @@
             }
           }
         }
+      },
+      "guards": {
+        "title": "שומר חלונות (Guards)",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "שם",
+              "type": "string",
+              "required": true,
+              "placeholder": "כיבוי מזגן - חלון פתוח"
+            },
+            "conditionName": {
+              "title": "שם מתג התנאי",
+              "type": "string",
+              "default": "מזגן",
+              "description": "מתג שמשקף את המזגן (אוטומציה: מזגן נדלק/כבה ← להדליק/לכבות אותו)"
+            },
+            "inputs": {
+              "title": "חלונות ודלתות",
+              "type": "array",
+              "items": {
+                "title": "שם",
+                "type": "string"
+              }
+            },
+            "delay": {
+              "title": "אחרי כמה זמן",
+              "type": "number",
+              "default": 30,
+              "minimum": 1,
+              "required": true
+            },
+            "delayUnit": {
+              "title": "יחידות",
+              "type": "string",
+              "default": "minutes",
+              "oneOf": [
+                {
+                  "title": "Seconds",
+                  "enum": [
+                    "seconds"
+                  ]
+                },
+                {
+                  "title": "Minutes",
+                  "enum": [
+                    "minutes"
+                  ]
+                },
+                {
+                  "title": "Hours",
+                  "enum": [
+                    "hours"
+                  ]
+                }
+              ]
+            },
+            "sensorType": {
+              "title": "סוג חיישן יציאה",
+              "type": "string",
+              "default": "contact",
+              "oneOf": [
+                {
+                  "title": "Contact",
+                  "enum": [
+                    "contact"
+                  ]
+                },
+                {
+                  "title": "Motion",
+                  "enum": [
+                    "motion"
+                  ]
+                },
+                {
+                  "title": "Occupancy",
+                  "enum": [
+                    "occupancy"
+                  ]
+                },
+                {
+                  "title": "Leak (התראה קריטית)",
+                  "enum": [
+                    "leak"
+                  ]
+                }
+              ]
+            },
+            "pulseSeconds": {
+              "title": "כמה שניות החיישן דולק",
+              "type": "number",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 60
+            },
+            "sensorName": {
+              "title": "שם חיישן היציאה (אופציונלי)",
+              "type": "string"
+            },
+            "rememberState": {
+              "title": "לזכור מצבים וספירה אחרי הפעלה מחדש",
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
       }
     }
   },
   "layout": [
+    {
+      "type": "help",
+      "helpvalue": "<h5>לופים וטיימרים</h5>"
+    },
     {
       "key": "loops",
       "type": "array",
@@ -260,6 +372,83 @@
                 "loops[].switchName",
                 "loops[].sensorName",
                 "loops[].debug"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "help",
+      "helpvalue": "<h5>שומר חלונות</h5><p>המזגן דלוק + לפחות חלון אחד פתוח במשך הזמן שנבחר ← החיישן נדלק פעם אחת. כל החלונות נסגרו או המזגן כבה ← הספירה מתבטלת.</p>"
+    },
+    {
+      "key": "guards",
+      "type": "array",
+      "notitle": true,
+      "orderable": false,
+      "buttonText": "הוסף שומר",
+      "items": [
+        {
+          "type": "fieldset",
+          "title": "שומר",
+          "expandable": true,
+          "expanded": true,
+          "items": [
+            "guards[].name",
+            "guards[].conditionName",
+            {
+              "type": "div",
+              "displayFlex": true,
+              "flex-direction": "row",
+              "notitle": true,
+              "items": [
+                {
+                  "key": "guards[].delay",
+                  "flex": "1 1 0"
+                },
+                {
+                  "key": "guards[].delayUnit",
+                  "flex": "1 1 0"
+                }
+              ]
+            },
+            {
+              "key": "guards[].inputs",
+              "type": "array",
+              "buttonText": "הוסף חלון / דלת",
+              "items": [
+                {
+                  "key": "guards[].inputs[]",
+                  "notitle": true,
+                  "placeholder": "חלון סלון"
+                }
+              ]
+            },
+            {
+              "type": "fieldset",
+              "title": "אפשרויות נוספות",
+              "expandable": true,
+              "expanded": false,
+              "items": [
+                {
+                  "type": "div",
+                  "displayFlex": true,
+                  "flex-direction": "row",
+                  "notitle": true,
+                  "items": [
+                    {
+                      "key": "guards[].sensorType",
+                      "flex": "1 1 0"
+                    },
+                    {
+                      "key": "guards[].pulseSeconds",
+                      "flex": "1 1 0"
+                    }
+                  ]
+                },
+                "guards[].sensorName",
+                "guards[].rememberState"
               ]
             }
           ]

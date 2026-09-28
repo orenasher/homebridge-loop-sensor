@@ -1,7 +1,7 @@
 {
   "name": "homebridge-loop-sensor",
   "displayName": "Loop Sensor",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A switch that pulses a HomeKit sensor every X minutes while it's on, or once after a countdown. Great for repeating automations (e.g. 'window open while AC is on' alerts).",
   "main": "index.js",
   "author": "Oren Asher",
