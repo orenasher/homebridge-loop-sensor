@@ -11,7 +11,7 @@ No other plugin (no camera-ui), no external script, no manual files. Install it,
 - **Choose where it appears** (8 positions), the **layout** (compact / card / detailed / banner / your own HTML) and the **theme** – and restyle everything with colors, size, opacity, fonts or your own CSS
 - **Image quality** presets: low / medium / high / ultra (or exact width/height/JPEG quality)
 - HomeKit **rain sensor** (motion / leak / occupancy / contact – your choice), optional outdoor **temperature** and **humidity** sensors
-- Hebrew & English, metric & imperial
+- **English by default, Hebrew optional** (`"language": "he"`), metric & imperial
 - Fully covered by the normal Homebridge backup/restore – everything lives in `config.json`; nothing else to save
 
 ## Requirements
@@ -43,7 +43,7 @@ Everything is available in the plugin Settings screen. Minimal config:
 }
 ```
 
-Custom location: set `"city": "מותאם אישית (הזן קווים ידנית)"` with `"lat"` and `"lon"` (and optionally `"locationName"`).
+Cities can be written in English (`Kfar Yona`) or Hebrew (`כפר יונה`). Custom location: set `"city": "מותאם אישית (הזן קווים ידנית)"` with `"lat"` and `"lon"` (and optionally `"locationName"`).
 
 Full example:
 
@@ -51,10 +51,11 @@ Full example:
 {
   "platform": "WindyCamera",
   "name": "Rain Radar",
-  "city": "כפר יונה",
+  "language": "en",
+  "city": "Kfar Yona",
   "quality": "high",
   "captureIntervalMs": 120000,
-  "weather": { "units": "metric", "language": "he", "rainDetection": "both" },
+  "weather": { "units": "metric", "rainDetection": "both" },
   "overlay": {
     "position": "bottom-right",
     "layout": "detailed",
@@ -72,6 +73,7 @@ Full example:
 
 | Option | Values | Default |
 | --- | --- | --- |
+| `language` | `en` (default) · `he` – language of the overlay, log messages and default names | `en` |
 | `quality` | `low` 800×550 · `medium` 1000×700 · `high` 1300×900 · `ultra` 1300×900 @2x | `high` |
 | `width`, `height`, `jpegQuality` | override the preset | – |
 | `captureIntervalMs` | ≥ 30000 | 120000 |
@@ -129,6 +131,8 @@ Version 2 no longer needs **homebridge-camera-ui** or any helper script.
 # מדריך בעברית
 
 תוסף **עצמאי לחלוטין** ל‑Homebridge: מכ״ם גשם של Windy.com כמצלמה באפל הום, עם **מזג האוויר העכשווי והתחזית על התמונה**, ו**חיישן "יורד גשם עכשיו?"**. בלי camera‑ui, בלי סקריפט חיצוני ובלי קבצים ידניים.
+
+להפעלת הממשק בעברית (התחזית על התמונה, הודעות הלוג ושמות ברירת המחדל) הגדירו `"language": "he"`. ברירת המחדל היא אנגלית. מסך ההגדרות דו‑לשוני.
 
 ## מה יש בו
 

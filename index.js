@@ -6,6 +6,7 @@ const { normalize } = require('./lib/config');
 const { fetchWeather } = require('./lib/weather');
 const { capture } = require('./lib/capture');
 const { WindyCameraDelegate } = require('./lib/camera');
+const { t } = require('./lib/i18n');
 
 const PLUGIN_NAME = 'homebridge-windy-camera';
 const PLATFORM_NAME = 'WindyCamera';
@@ -30,10 +31,11 @@ class WindyCameraPlatform {
 
     const base = path.join(api.user.storagePath(), 'windy-camera');
     this.imagePath = this.cfg.imagePath || path.join(base, 'rain.jpg');
-    this.cfg.notes.forEach((n) => this.log.warn(n));
+    this.tr = (k, a) => t(this.cfg.language, k, a);
+    this.cfg.notes.forEach((n) => this.log.warn(this.tr(n)));
 
     if (!api.hap || !api.hap.CameraController) {
-      this.log.error('This Homebridge version does not support cameras (HAP-NodeJS too old). Please update Homebridge.');
+      this.log.error(this.tr('oldHap'));
       return;
     }
     try { fs.mkdirSync(path.dirname(this.imagePath), { recursive: true }); } catch (e) { /* ignore */ }
@@ -71,9 +73,9 @@ class WindyCameraPlatform {
     this.legacyCheck();
 
     if (!this.cfg.chromiumPath) {
-      this.log.warn('Chromium was not found automatically. Install it (sudo apt install chromium) or set "chromiumPath" in the plugin config.');
+      this.log.warn(this.tr('noChromium'));
     }
-    this.log.info(`Windy Camera ready: ${this.cfg.locationName || this.cfg.cityLabel} (${this.cfg.lat}, ${this.cfg.lon}), quality=${this.cfg.image.quality} ${this.cfg.image.width}x${this.cfg.image.height}, every ${Math.round(this.cfg.captureIntervalMs / 1000)}s`);
+    this.log.info(this.tr('ready', { where: this.cfg.locationName || this.cfg.cityLabel, lat: this.cfg.lat, lon: this.cfg.lon, q: this.cfg.image.quality, w: this.cfg.image.width, h: this.cfg.image.height, s: Math.round(this.cfg.captureIntervalMs / 1000) }));
 
     if (this.cfg.weather.enabled) {
       this.refreshWeather().finally(() => this.scheduleCapture(500));
@@ -93,7 +95,7 @@ class WindyCameraPlatform {
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [acc]);
       }
       this.fillInfo(acc);
-      this.log.info('Camera exposed on the Homebridge bridge.');
+      this.log.info(this.tr('bridged'));
       return;
     }
     // external (unbridged) accessory - default. Paired separately with the same PIN as the bridge.
@@ -103,7 +105,7 @@ class WindyCameraPlatform {
     acc.configureController(this.delegate.controller);
     this.fillInfo(acc);
     this.api.publishExternalAccessories(PLUGIN_NAME, [acc]);
-    this.log.info('Camera published as a separate HomeKit accessory. Add it in Apple Home with the same PIN as your Homebridge bridge (Homebridge UI > Status > Unpaired Accessories).');
+    this.log.info(this.tr('external'));
   }
 
   fillInfo(acc) {
@@ -196,12 +198,12 @@ class WindyCameraPlatform {
     try {
       this.weather = await fetchWeather(this.cfg.lat, this.cfg.lon, this.cfg.weather);
       const c = this.weather.current;
-      this.log.info(`Weather: ${c.temp}°C, humidity ${c.humidity}%, code ${c.weatherCode}, raining=${c.raining}`);
+      this.log.info(this.tr('weather', { t: c.temp, h: c.humidity, c: c.weatherCode, r: c.raining }));
       this.updateSensors();
     } catch (e) {
-      this.log.warn('Weather update failed: ' + e.message);
+      this.log.warn(this.tr('weatherFail', e.message));
       if (this.weather && Date.now() - this.weather.fetchedAt > 3 * 3600 * 1000) {
-        this.log.warn('Weather data is older than 3 hours - hiding it.');
+        this.log.warn(this.tr('weatherOld'));
         this.weather = null;
       }
     }
@@ -224,7 +226,7 @@ class WindyCameraPlatform {
       await capture(this.cfg, fresh, this.imagePath);
       if (this.cfg.debug) this.log.info('Radar frame updated');
     } catch (e) {
-      this.log.warn('Capture failed: ' + e.message);
+      this.log.warn(this.tr('captureFail', e.message));
     } finally {
       this.capturing = false;
     }
@@ -239,7 +241,7 @@ class WindyCameraPlatform {
         try { return /windy-camera|inject-camera/.test(fs.readFileSync(path.join(dir, f), 'utf8')); } catch (e) { return false; }
       });
       if (hits.length) {
-        this.log.warn(`Legacy v1.x startup hook found (${hits.map((h) => path.join(dir, h)).join(', ')}). It is not needed anymore - remove it (sudo rm) and delete the old camera from camera-ui. See the README migration guide.`);
+        this.log.warn(this.tr('legacy', hits.map((h) => path.join(dir, h)).join(', ')));
       }
     } catch (e) { /* ignore */ }
   }
