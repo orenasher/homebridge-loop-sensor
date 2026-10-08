@@ -1,0 +1,36 @@
+{
+  "name": "homebridge-windy-camera",
+  "displayName": "Windy Camera",
+  "version": "2.0.0",
+  "description": "Standalone Homebridge plugin: Windy.com rain radar camera for Apple Home with current weather overlay, rain sensor, selectable image quality and fully customizable design. No other plugin or script required.",
+  "main": "index.js",
+  "license": "MIT",
+  "keywords": [
+    "homebridge-plugin",
+    "windy",
+    "rain",
+    "radar",
+    "weather",
+    "camera",
+    "homekit",
+    "rain-sensor",
+    "israel"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "homebridge": ">=1.6.0"
+  },
+  "files": [
+    "index.js",
+    "lib",
+    "config.schema.json",
+    "README.md"
+  ],
+  "dependencies": {
+    "playwright-core": "^1.40.0"
+  },
+  "optionalDependencies": {
+    "ffmpeg-for-homebridge": ">=0.1.0"
+  },
+  "author": "Oren Asher"
+}
