@@ -1,0 +1,283 @@
+<style>
+  .wc { --bg:#ffffff; --card:#f6f8fb; --fg:#0f172a; --sub:#64748b; --line:#e2e8f0; --acc:#0284c7; --accfg:#fff; font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Hebrew",Arial,sans-serif; color:var(--fg); max-width:980px; margin:0 auto; padding:4px 2px 90px; }
+  @media (prefers-color-scheme: dark){ .wc{ --bg:#0b1220; --card:#131c2e; --fg:#e5e7eb; --sub:#94a3b8; --line:#243049; --acc:#38bdf8; --accfg:#04202e; } }
+  .wc *{ box-sizing:border-box; }
+  .wc h2{ font-size:15px; margin:26px 0 10px; text-transform:uppercase; letter-spacing:.06em; color:var(--sub); font-weight:700; }
+  .wc .top{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .wc .top h1{ font-size:22px; margin:0; }
+  .wc .seg{ display:inline-flex; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; flex-wrap:wrap; }
+  .wc .seg button{ border:0; background:transparent; color:var(--fg); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px; }
+  .wc .seg button.on{ background:var(--acc); color:var(--accfg); font-weight:600; }
+  .wc .stage{ position:relative; width:100%; aspect-ratio:1300/900; border-radius:16px; overflow:hidden; border:1px solid var(--line); background:#0b1b2b; }
+  .wc .map{ position:absolute; inset:0; background:
+      radial-gradient(ellipse 22% 18% at 38% 46%, rgba(250,204,21,.85), rgba(34,197,94,.7) 45%, transparent 70%),
+      radial-gradient(ellipse 14% 12% at 66% 62%, rgba(239,68,68,.8), rgba(250,204,21,.65) 45%, transparent 72%),
+      radial-gradient(ellipse 26% 20% at 58% 30%, rgba(59,130,246,.65), transparent 70%),
+      linear-gradient(135deg,#17324a,#0f2236 55%,#16314a); }
+  .wc .map:after{ content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px); background-size:8.33% 12.5%; }
+  .wc .scaler{ position:absolute; left:0; top:0; width:1300px; height:900px; transform-origin:0 0; }
+  .wc .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; }
+  .wc .tpl{ border:2px solid var(--line); background:var(--card); border-radius:14px; padding:8px; cursor:pointer; text-align:start; color:var(--fg); }
+  .wc .tpl:hover{ border-color:var(--acc); }
+  .wc .tpl.on{ border-color:var(--acc); box-shadow:0 0 0 3px color-mix(in srgb, var(--acc) 25%, transparent); }
+  .wc .tpl .stage{ border-radius:10px; }
+  .wc .tpl .nm{ margin:8px 2px 2px; font-size:14px; font-weight:600; display:flex; justify-content:space-between; }
+  .wc .rows{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+  .wc .box{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .wc .box label.t{ display:block; font-size:13px; font-weight:600; margin-bottom:8px; }
+  .wc .box .hint{ color:var(--sub); font-size:12px; margin-top:6px; }
+  .wc select,.wc input[type=text],.wc input[type=number]{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--fg); font-size:14px; }
+  .wc input[type=range]{ width:100%; accent-color:var(--acc); }
+  .wc .pos{ display:grid; grid-template-columns:repeat(3,44px); grid-template-rows:repeat(3,34px); gap:5px; }
+  .wc .pos button{ border:1px solid var(--line); background:var(--bg); border-radius:8px; cursor:pointer; }
+  .wc .pos button.on{ background:var(--acc); border-color:var(--acc); }
+  .wc .pos button[disabled]{ opacity:.25; cursor:default; }
+  .wc .sw{ display:flex; align-items:center; justify-content:space-between; padding:6px 0; font-size:14px; }
+  .wc .sw input{ width:20px; height:20px; accent-color:var(--acc); }
+  .wc .bar{ position:fixed; left:0; right:0; bottom:0; padding:12px 18px; display:flex; gap:10px; justify-content:flex-end; background:var(--bg); border-top:1px solid var(--line); z-index:20; }
+  .wc .btn{ border:1px solid var(--line); background:var(--card); color:var(--fg); padding:10px 18px; border-radius:10px; cursor:pointer; font-size:14px; }
+  .wc .btn.pri{ background:var(--acc); color:var(--accfg); border-color:var(--acc); font-weight:700; }
+  .wc .note{ color:var(--sub); font-size:12px; margin-top:8px; }
+</style>
+
+<div class="wc" id="app">
+  <div class="top">
+    <h1 id="title"></h1>
+    <div class="seg" id="langSeg"></div>
+  </div>
+
+  <h2 id="h_preview"></h2>
+  <div class="stage" id="bigStage"><div class="map"></div><div class="scaler" id="bigScaler"></div></div>
+  <div class="note" id="previewNote"></div>
+
+  <h2 id="h_tpl"></h2>
+  <div class="grid" id="tplGrid"></div>
+
+  <h2 id="h_loc"></h2>
+  <div class="rows">
+    <div class="box"><label class="t" id="l_name"></label><input type="text" id="name"></div>
+    <div class="box"><label class="t" id="l_city"></label><select id="city"></select>
+      <div id="custom" style="display:none;margin-top:8px;display:none;gap:8px"><input type="number" step="0.0001" id="lat" placeholder="lat"><input type="number" step="0.0001" id="lon" placeholder="lon" style="margin-top:6px"></div></div>
+  </div>
+
+  <h2 id="h_look"></h2>
+  <div class="rows">
+    <div class="box"><label class="t" id="l_pos"></label><div class="pos" id="posGrid"></div></div>
+    <div class="box"><label class="t" id="l_layout"></label><div class="seg" id="layoutSeg"></div>
+      <label class="t" style="margin-top:12px" id="l_theme"></label><div class="seg" id="themeSeg"></div></div>
+    <div class="box"><label class="t"><span id="l_scale"></span> <b id="scaleV"></b></label><input type="range" id="scale" min="0.5" max="2" step="0.05">
+      <label class="t" style="margin-top:12px"><span id="l_days"></span> <b id="daysV"></b></label><input type="range" id="days" min="0" max="5" step="1">
+      <label class="t" style="margin-top:12px"><span id="l_hours"></span> <b id="hoursV"></b></label><input type="range" id="hours" min="0" max="8" step="1"></div>
+    <div class="box"><div class="sw"><span id="l_icons"></span><input type="checkbox" id="icons"></div>
+      <div class="sw"><span id="l_city_show"></span><input type="checkbox" id="showCity"></div>
+      <div class="sw"><span id="l_rainbadge"></span><input type="checkbox" id="showRain"></div>
+      <div class="sw"><span id="l_stamp"></span><input type="checkbox" id="showStamp"></div></div>
+  </div>
+
+  <h2 id="h_data"></h2>
+  <div class="rows">
+    <div class="box"><label class="t" id="l_quality"></label><div class="seg" id="qualSeg"></div><div class="hint" id="qualHint"></div></div>
+    <div class="box"><label class="t" id="l_units"></label><div class="seg" id="unitSeg"></div></div>
+    <div class="box"><div class="sw"><span id="l_srain"></span><input type="checkbox" id="sRain"></div>
+      <select id="rainType" style="margin:4px 0 8px"></select>
+      <div class="sw"><span id="l_stemp"></span><input type="checkbox" id="sTemp"></div>
+      <div class="sw"><span id="l_shum"></span><input type="checkbox" id="sHum"></div>
+      <div class="hint" id="rainHint"></div></div>
+    <div class="box"><div class="sw"><span id="l_live"></span><input type="checkbox" id="live"></div><div class="hint" id="liveHint"></div></div>
+  </div>
+  <div class="note" id="advNote"></div>
+
+  <div class="bar">
+    <button class="btn" id="advBtn"></button>
+    <button class="btn pri" id="saveBtn"></button>
+  </div>
+</div>
+
+<script src="overlay.bundle.js"></script>
+<script>
+(function () {
+  var W = window.WindyOverlay;
+  var S = {
+    en: {
+      title: 'Windy Camera', preview: 'Live preview', tpl: 'Choose a template', loc: 'Location', look: 'Look & position', data: 'Image, weather & sensors',
+      name: 'Camera name', city: 'City', custom: 'Custom (enter coordinates)', pos: 'Position on the image', layout: 'Layout', theme: 'Theme', scale: 'Size', days: 'Forecast days', hours: 'Next hours',
+      icons: 'Weather icons', cityShow: 'Show city name', rainBadge: 'Show "raining now" badge', stamp: 'Show update time',
+      quality: 'Radar image quality', units: 'Units', srain: 'Rain sensor (raining now?)', stemp: 'Outdoor temperature sensor', shum: 'Outdoor humidity sensor', live: 'Live view (needs ffmpeg)',
+      adv: 'All settings', back: 'Back to designer', save: 'Save', saved: 'Saved. Restart Homebridge to apply.',
+      previewNote: 'The preview uses sample weather. The real camera shows your live weather.',
+      advNote: 'Need more? Open "All settings" for colors, fonts, custom CSS/HTML, Windy layer, intervals and more. Anything you set there overrides the template.',
+      rainHint: 'HomeKit has no rain sensor, so pick the type that suits your automations.', liveHint: 'Disable to save CPU; snapshots keep working.',
+      q: { low: 'Low', medium: 'Medium', high: 'High', ultra: 'Ultra' }, qh: { low: '800×550 – lightest', medium: '1000×700', high: '1300×900 – default', ultra: '1300×900 at 2x sharpness – heaviest' },
+      lay: { compact: 'Compact', card: 'Card', detailed: 'Detailed', banner: 'Banner' }, th: { dark: 'Dark', light: 'Light', glass: 'Glass', transparent: 'Clear' },
+      u: { metric: '°C · km/h', imperial: '°F · mph' }, rt: { motion: 'Motion sensor', leak: 'Leak sensor', occupancy: 'Occupancy sensor', contact: 'Contact sensor' }
+    },
+    he: {
+      title: 'מצלמת Windy', preview: 'תצוגה מקדימה', tpl: 'בחרו תבנית', loc: 'מיקום', look: 'מראה ומיקום', data: 'תמונה, מזג אוויר וחיישנים',
+      name: 'שם המצלמה', city: 'עיר', custom: 'מותאם אישית (הזנת קואורדינטות)', pos: 'מיקום על התמונה', layout: 'תבנית פריסה', theme: 'ערכת נושא', scale: 'גודל', days: 'ימי תחזית', hours: 'שעות קדימה',
+      icons: 'אייקוני מזג אוויר', cityShow: 'הצג שם עיר', rainBadge: 'הצג "יורד גשם"', stamp: 'הצג שעת עדכון',
+      quality: 'איכות תמונת המכ״ם', units: 'יחידות', srain: 'חיישן גשם (יורד גשם עכשיו?)', stemp: 'חיישן טמפרטורה חיצונית', shum: 'חיישן לחות חיצונית', live: 'צפייה חיה (דורש ffmpeg)',
+      adv: 'כל ההגדרות', back: 'חזרה למעצב', save: 'שמירה', saved: 'נשמר. הפעילו מחדש את Homebridge כדי להחיל.',
+      previewNote: 'התצוגה המקדימה משתמשת במזג אוויר לדוגמה. המצלמה האמיתית מציגה מזג אוויר חי.',
+      advNote: 'צריכים עוד? פתחו "כל ההגדרות" לצבעים, גופנים, CSS/HTML מותאם, שכבת Windy, תדירות ועוד. כל מה שתגדירו שם גובר על התבנית.',
+      rainHint: 'ב‑HomeKit אין חיישן גשם, לכן בחרו את הסוג שמתאים לאוטומציות שלכם.', liveHint: 'כיבוי חוסך CPU; התמונה הסטטית ממשיכה לעבוד.',
+      q: { low: 'נמוכה', medium: 'בינונית', high: 'גבוהה', ultra: 'אולטרה' }, qh: { low: '800×550 – הכי קל', medium: '1000×700', high: '1300×900 – ברירת מחדל', ultra: '1300×900 בחדות כפולה – הכי כבד' },
+      lay: { compact: 'קומפקטי', card: 'כרטיס', detailed: 'מפורט', banner: 'פס' }, th: { dark: 'כהה', light: 'בהיר', glass: 'זכוכית', transparent: 'שקוף' },
+      u: { metric: '°C · קמ״ש', imperial: '°F · מייל/ש׳' }, rt: { motion: 'חיישן תנועה', leak: 'חיישן נזילה', occupancy: 'חיישן נוכחות', contact: 'חיישן מגע' }
+    }
+  };
+  var CITIES = [['כפר יונה', 'Kfar Yona'], ['נתניה', 'Netanya'], ['תל אביב - יפו', 'Tel Aviv - Yafo'], ['חיפה', 'Haifa'], ['ירושלים', 'Jerusalem'], ['באר שבע', 'Beer Sheva'], ['אשדוד', 'Ashdod'], ['אילת', 'Eilat'], ['רעננה', 'Raanana'], ['חדרה', 'Hadera']];
+  var CUSTOM = 'מותאם אישית (הזן קווים ידנית)';
+  var CITY_EN = {}; CITIES.forEach(function (c) { CITY_EN[c[0]] = c[1]; });
+  var OWN_KEYS = ['position', 'layout', 'theme', 'scale', 'margin', 'borderRadius', 'forecastDays', 'hourlyCount', 'backgroundColor', 'textColor', 'accentColor', 'opacity'];
+
+  var cfg = null, lang = 'en';
+  var $ = function (id) { return document.getElementById(id); };
+  var t = function () { return S[lang]; };
+
+  function mockWeather() {
+    var days = []; var codes = [61, 3, 0, 1, 2, 63];
+    for (var i = 0; i < 6; i++) { var d = new Date(Date.now() + i * 86400000); days.push({ date: d.toISOString().slice(0, 10), code: codes[i], max: 25 + (i % 3), min: 17 + (i % 2), rainProb: [70, 20, 0, 5, 10, 60][i], rainSum: 0 }); }
+    var hours = []; for (var h = 1; h <= 12; h++) hours.push({ time: '2000-01-01T' + String((new Date().getHours() + h) % 24).padStart(2, '0') + ':00', temp: 20 + (h % 4), rainProb: (h * 7) % 90, code: h < 4 ? 61 : 3, isDay: 1 });
+    return { current: { temp: 22.4, feels: 23.1, humidity: 63, isDay: 1, weatherCode: 61, windKmh: 14, raining: true }, daily: days, hourly: hours, timezone: undefined };
+  }
+  var MOCK = mockWeather();
+
+  function previewCfg(templateId, withOwn) {
+    var weather = { units: (cfg.weather && cfg.weather.units) || 'metric', language: lang, timezone: '' };
+    var name = cfg.city && CITY_EN[cfg.city] ? (lang === 'he' ? cfg.city : CITY_EN[cfg.city]) : (cfg.locationName || '');
+    var own = withOwn ? cfg.overlay : {};
+    return { weather: weather, locationName: name, overlay: W.normalizeOverlay(own, templateId, true) };
+  }
+
+  function fill(scalerEl, pc, idPrefix) {
+    var r = W.render(pc, MOCK, { id: idPrefix, absolute: true });
+    scalerEl.innerHTML = '<style>' + r.css + '</style>' + r.html;
+  }
+  function fit(stage) {
+    var sc = stage.querySelector('.scaler'); if (!sc) return;
+    sc.style.transform = 'scale(' + (stage.clientWidth / 1300) + ')';
+  }
+
+  function renderBig() {
+    fill($('bigScaler'), previewCfg(cfg.template || 'classic', true), 'wcBig');
+    fit($('bigStage'));
+  }
+
+  function buildGallery() {
+    var g = $('tplGrid'); g.innerHTML = '';
+    W.TEMPLATE_IDS.forEach(function (id) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'tpl' + ((cfg.template || 'classic') === id ? ' on' : '');
+      b.innerHTML = '<div class="stage"><div class="map"></div><div class="scaler"></div></div><div class="nm"><span>' + W.TEMPLATES[id].name[lang] + '</span></div>';
+      g.appendChild(b);
+      var st = b.querySelector('.stage');
+      fill(b.querySelector('.scaler'), previewCfg(id, false), 'wcT_' + id.replace(/[^a-z]/g, ''));
+      fit(st);
+      b.onclick = function () {
+        cfg.template = id; cfg.overlay = cfg.overlay || {};
+        OWN_KEYS.forEach(function (k) { delete cfg.overlay[k]; });
+        sync(); pushCfg();
+      };
+    });
+  }
+
+  function seg(el, items, current, onPick) {
+    el.innerHTML = '';
+    items.forEach(function (it) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = it[1]; if (it[0] === current) b.className = 'on';
+      b.onclick = function () { onPick(it[0]); }; el.appendChild(b);
+    });
+  }
+
+  function eff() { return W.normalizeOverlay(cfg.overlay, cfg.template || 'classic', true); }
+  function setOv(k, v) { cfg.overlay = cfg.overlay || {}; cfg.overlay[k] = v; sync(); pushCfg(); }
+
+  function sync() {
+    var T = t(); var o = eff();
+    document.documentElement.setAttribute('dir', lang === 'he' ? 'rtl' : 'ltr');
+    $('title').textContent = T.title; $('h_preview').textContent = T.preview; $('h_tpl').textContent = T.tpl; $('h_loc').textContent = T.loc; $('h_look').textContent = T.look; $('h_data').textContent = T.data;
+    $('l_name').textContent = T.name; $('l_city').textContent = T.city; $('l_pos').textContent = T.pos; $('l_layout').textContent = T.layout; $('l_theme').textContent = T.theme;
+    $('l_scale').textContent = T.scale; $('l_days').textContent = T.days; $('l_hours').textContent = T.hours;
+    $('l_icons').textContent = T.icons; $('l_city_show').textContent = T.cityShow; $('l_rainbadge').textContent = T.rainBadge; $('l_stamp').textContent = T.stamp;
+    $('l_quality').textContent = T.quality; $('l_units').textContent = T.units; $('l_srain').textContent = T.srain; $('l_stemp').textContent = T.stemp; $('l_shum').textContent = T.shum; $('l_live').textContent = T.live;
+    $('previewNote').textContent = T.previewNote; $('advNote').textContent = T.advNote; $('rainHint').textContent = T.rainHint; $('liveHint').textContent = T.liveHint;
+    $('advBtn').textContent = advOpen ? T.back : T.adv; $('saveBtn').textContent = T.save;
+
+    seg($('langSeg'), [['en', 'English'], ['he', 'עברית']], lang, function (l) { lang = l; cfg.language = l; if (!cfg.weather) cfg.weather = {}; cfg.weather.language = l; sync(); pushCfg(); });
+    seg($('layoutSeg'), ['compact', 'card', 'detailed', 'banner'].map(function (k) { return [k, T.lay[k]]; }), o.layout, function (v) { setOv('layout', v); });
+    seg($('themeSeg'), ['dark', 'light', 'glass', 'transparent'].map(function (k) { return [k, T.th[k]]; }), o.theme, function (v) { setOv('theme', v); });
+    seg($('qualSeg'), ['low', 'medium', 'high', 'ultra'].map(function (k) { return [k, T.q[k]]; }), cfg.quality || 'high', function (v) { cfg.quality = v; sync(); pushCfg(); });
+    $('qualHint').textContent = T.qh[cfg.quality || 'high'];
+    seg($('unitSeg'), ['metric', 'imperial'].map(function (k) { return [k, T.u[k]]; }), (cfg.weather && cfg.weather.units) || 'metric', function (v) { cfg.weather = cfg.weather || {}; cfg.weather.units = v; sync(); pushCfg(); });
+
+    var pg = $('posGrid'); pg.innerHTML = '';
+    ['top-left', 'top-center', 'top-right', 'middle-left', null, 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'].forEach(function (p) {
+      var b = document.createElement('button'); b.type = 'button';
+      if (!p) { b.disabled = true; } else { if (o.position === p) b.className = 'on'; b.onclick = function () { setOv('position', p); }; }
+      pg.appendChild(b);
+    });
+
+    $('name').value = cfg.name || '';
+    var sel = $('city'); sel.innerHTML = '';
+    CITIES.concat([[CUSTOM, T.custom]]).forEach(function (c) { var op = document.createElement('option'); op.value = c[0]; op.textContent = c[0] === CUSTOM ? T.custom : (lang === 'he' ? c[0] : c[1]) + (lang === 'he' ? '' : ' / ' + c[0]); sel.appendChild(op); });
+    var cityVal = cfg.city || 'כפר יונה'; if (!CITY_EN[cityVal] && cityVal !== CUSTOM) { var found = CITIES.filter(function (c) { return c[1].toLowerCase() === String(cityVal).toLowerCase(); })[0]; cityVal = found ? found[0] : CUSTOM; }
+    sel.value = cityVal; $('custom').style.display = cityVal === CUSTOM ? 'block' : 'none';
+    $('lat').value = cfg.lat != null ? cfg.lat : ''; $('lon').value = cfg.lon != null ? cfg.lon : '';
+
+    $('scale').value = o.scale; $('scaleV').textContent = o.scale.toFixed(2) + '×';
+    $('days').value = o.forecastDays; $('daysV').textContent = o.forecastDays;
+    $('hours').value = o.hourlyCount; $('hoursV').textContent = o.hourlyCount;
+    $('icons').checked = o.icons; $('showCity').checked = o.showCity; $('showRain').checked = o.showRainStatus; $('showStamp').checked = o.showTimestamp;
+
+    var sn = cfg.sensors || {};
+    $('sRain').checked = sn.rain !== false; $('sTemp').checked = !!sn.temperature; $('sHum').checked = !!sn.humidity;
+    var rt = $('rainType'); rt.innerHTML = ''; ['motion', 'leak', 'occupancy', 'contact'].forEach(function (k) { var op = document.createElement('option'); op.value = k; op.textContent = T.rt[k]; rt.appendChild(op); }); rt.value = sn.rainType || 'motion';
+    $('live').checked = !(cfg.streaming && cfg.streaming.enabled === false);
+    buildGallery(); renderBig();
+  }
+
+  var advOpen = false;
+  function pushCfg() { if (window.homebridge) window.homebridge.updatePluginConfig([cfg]); }
+
+  function bind() {
+    $('name').oninput = function () { cfg.name = this.value; pushCfg(); };
+    $('city').onchange = function () { cfg.city = this.value; sync(); pushCfg(); };
+    $('lat').oninput = function () { cfg.lat = parseFloat(this.value); pushCfg(); };
+    $('lon').oninput = function () { cfg.lon = parseFloat(this.value); pushCfg(); };
+    $('scale').oninput = function () { setOv('scale', parseFloat(this.value)); };
+    $('days').oninput = function () { setOv('forecastDays', parseInt(this.value, 10)); };
+    $('hours').oninput = function () { setOv('hourlyCount', parseInt(this.value, 10)); };
+    $('icons').onchange = function () { setOv('icons', this.checked); };
+    $('showCity').onchange = function () { setOv('showCity', this.checked); };
+    $('showRain').onchange = function () { setOv('showRainStatus', this.checked); };
+    $('showStamp').onchange = function () { setOv('showTimestamp', this.checked); };
+    $('sRain').onchange = function () { cfg.sensors = cfg.sensors || {}; cfg.sensors.rain = this.checked; pushCfg(); };
+    $('sTemp').onchange = function () { cfg.sensors = cfg.sensors || {}; cfg.sensors.temperature = this.checked; pushCfg(); };
+    $('sHum').onchange = function () { cfg.sensors = cfg.sensors || {}; cfg.sensors.humidity = this.checked; pushCfg(); };
+    $('rainType').onchange = function () { cfg.sensors = cfg.sensors || {}; cfg.sensors.rainType = this.value; pushCfg(); };
+    $('live').onchange = function () { cfg.streaming = cfg.streaming || {}; cfg.streaming.enabled = this.checked; pushCfg(); };
+    $('saveBtn').onclick = function () {
+      if (!window.homebridge) return;
+      window.homebridge.updatePluginConfig([cfg]);
+      window.homebridge.savePluginConfig().then(function () { window.homebridge.toast.success(t().saved); }, function (e) { window.homebridge.toast.error(String(e && e.message || e)); });
+    };
+    $('advBtn').onclick = function () {
+      advOpen = !advOpen; var h = window.homebridge;
+      if (advOpen) { h.updatePluginConfig([cfg]); h.showSchemaForm(); $('app').style.display = 'none'; var back = document.createElement('button'); back.className = 'btn pri'; back.id = 'backFloat'; back.style.cssText = 'position:fixed;right:18px;bottom:14px;z-index:30'; back.textContent = t().back; back.onclick = function () { advOpen = false; h.hideSchemaForm(); h.getPluginConfig().then(function (c) { cfg = c[0] || cfg; $('app').style.display = ''; back.remove(); sync(); }); }; document.body.appendChild(back); }
+    };
+    window.addEventListener('resize', function () { document.querySelectorAll('.stage').forEach(fit); });
+  }
+
+  function start(arr) {
+    cfg = (arr && arr[0]) || { platform: 'WindyCamera' };
+    cfg.platform = 'WindyCamera';
+    if (!cfg.template) cfg.template = 'classic';
+    lang = cfg.language === 'he' ? 'he' : 'en';
+    bind(); sync();
+    setTimeout(function () { document.querySelectorAll('.stage').forEach(fit); }, 50);
+  }
+
+  if (window.homebridge) {
+    window.homebridge.addEventListener('ready', function () { window.homebridge.getPluginConfig().then(start); });
+  } else { start([]); }
+})();
+</script>

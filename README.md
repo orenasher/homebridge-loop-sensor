@@ -14,6 +14,12 @@ No other plugin (no camera-ui), no external script, no manual files. Install it,
 - **English by default, Hebrew optional** (`"language": "he"`), metric & imperial
 - Fully covered by the normal Homebridge backup/restore – everything lives in `config.json`; nothing else to save
 
+## Design templates & the visual settings screen
+
+Open the plugin **Settings** in Homebridge UI: you get a designer with a **live preview** and a gallery of **12 ready-made templates** (Classic, Minimal, Frosted glass, Dark/Light banner, Neon, Sunset, Ocean, Forest, High contrast, Big (TV), Full forecast). Click a template, pick the position on a 3×3 grid, layout, theme, size and forecast days, the image quality and the sensors – then **Save**. The **All settings** button opens the full form (colors, fonts, custom CSS/HTML, Windy layer, intervals…). Anything you set yourself overrides the template.
+
+In `config.json` this is simply `"template": "neon"` (ids: `classic` `minimal` `glass` `banner-dark` `banner-light` `neon` `sunset` `ocean` `forest` `high-contrast` `big-tv` `full-forecast`).
+
 ## Requirements
 
 - Homebridge 1.6+ and Node 18+
@@ -79,6 +85,7 @@ Full example:
 | `captureIntervalMs` | ≥ 30000 | 120000 |
 | `windyOverlay` | `radar` `satellite` `rain` `clouds` `wind` `temp` | `radar` |
 | `zoom` | 3–12 | 9 |
+| `template` | see ids above | `classic` |
 | `overlay.position` | `top-left` `top-center` `top-right` `middle-left` `middle-right` `bottom-left` `bottom-center` `bottom-right` | `top-left` |
 | `overlay.layout` | `compact` `card` `detailed` `banner` `custom` | `card` |
 | `overlay.theme` | `dark` `light` `glass` `transparent` `custom` | `dark` |
@@ -143,6 +150,10 @@ Version 2 no longer needs **homebridge-camera-ui** or any helper script.
 - **חיישן גשם** ב‑HomeKit (תנועה / נזילה / נוכחות / מגע) + חיישני טמפרטורה ולחות חיצוניים אופציונליים
 - עברית ואנגלית, מעלות צלזיוס או פרנהייט
 - גיבוי ושחזור רגילים של Homebridge מכסים הכול – הכול נמצא ב‑`config.json`
+
+## תבניות עיצוב ומסך הגדרות חזותי
+
+ב‑Settings של התוסף ב‑Homebridge UI תמצאו מעצב עם **תצוגה מקדימה חיה** וגלריה של **12 תבניות מוכנות**. לוחצים על תבנית, בוחרים מיקום ברשת 3×3, פריסה, ערכת נושא, גודל, איכות וחיישנים, ושומרים. הכפתור **כל ההגדרות** פותח את הטופס המלא (צבעים, גופנים, CSS/HTML מותאם ועוד). כל מה שתגדירו בעצמכם גובר על התבנית. ב‑`config.json`: `"template": "neon"`.
 
 ## דרישות
 
