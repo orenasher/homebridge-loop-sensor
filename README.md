@@ -20,12 +20,20 @@ Open the plugin **Settings** in Homebridge UI: you get a designer with a **live 
 
 In `config.json` this is simply `"template": "neon"` (ids: `classic` `minimal` `glass` `banner-dark` `banner-light` `neon` `sunset` `ocean` `forest` `high-contrast` `big-tv` `full-forecast`).
 
-## Requirements
+## Dependencies & requirements
 
-- Homebridge 1.6+ and Node 18+
-- Chromium on the Homebridge machine: `sudo apt install chromium` (Raspberry Pi OS / Debian / Ubuntu)
-- For the emoji weather icons: `sudo apt install fonts-noto-color-emoji` (or turn icons off in the plugin settings)
-- For live view and sharper snapshots: `ffmpeg` (`sudo apt install ffmpeg`). Without it you still get snapshots.
+**Independent:** this plugin needs **no other Homebridge plugin** (no homebridge-camera-ui) and **no external script or startup hook**. Everything runs inside the plugin.
+
+What it does rely on:
+
+| What | Needed? | Why / how to get it |
+| --- | --- | --- |
+| Homebridge 1.6+ and Node 18+ | required | – |
+| `playwright-core` (npm) | installed automatically | controls the browser; the only dependency the plugin brings |
+| **Chromium** on the Homebridge machine | **required** | takes the radar picture: `sudo apt install chromium` (Raspberry Pi OS / Debian / Ubuntu) |
+| **ffmpeg** | needed for live view and sharper snapshots | `sudo apt install ffmpeg`, or the optional `ffmpeg-for-homebridge` package. Without it you still get still-image snapshots |
+| `fonts-noto-color-emoji` | only for the emoji weather icons | `sudo apt install fonts-noto-color-emoji`, or turn icons off in the settings |
+| Internet access to **windy.com** (radar) and **open-meteo.com** (weather, free, no API key) | required | if one is down, the last picture / last weather (up to 3 hours) keeps being shown |
 
 ## Installation
 
@@ -155,12 +163,20 @@ Version 2 no longer needs **homebridge-camera-ui** or any helper script.
 
 ב‑Settings של התוסף ב‑Homebridge UI תמצאו מעצב עם **תצוגה מקדימה חיה** וגלריה של **12 תבניות מוכנות**. לוחצים על תבנית, בוחרים מיקום ברשת 3×3, פריסה, ערכת נושא, גודל, איכות וחיישנים, ושומרים. הכפתור **כל ההגדרות** פותח את הטופס המלא (צבעים, גופנים, CSS/HTML מותאם ועוד). כל מה שתגדירו בעצמכם גובר על התבנית. ב‑`config.json`: `"template": "neon"`.
 
-## דרישות
+## תלויות ודרישות
 
-- Homebridge 1.6 ומעלה, Node 18 ומעלה
-- Chromium: `sudo apt install chromium`
-- לאייקונים: `sudo apt install fonts-noto-color-emoji`
-- לצפייה חיה: `sudo apt install ffmpeg`
+**עצמאי:** התוסף **לא צריך שום תוסף Homebridge אחר** (לא homebridge-camera-ui) ו**לא שום סקריפט חיצוני או hook בהפעלה**. הכול רץ בתוך התוסף.
+
+ועל מה כן הוא נשען:
+
+| רכיב | נחוץ? | למה ואיך מתקינים |
+| --- | --- | --- |
+| Homebridge 1.6 ומעלה, Node 18 ומעלה | חובה | – |
+| `playwright-core` (npm) | מותקן אוטומטית | שולט בדפדפן; התלות היחידה שהתוסף מביא איתו |
+| **Chromium** במחשב של Homebridge | **חובה** | מצלם את תמונת המכ״ם: `sudo apt install chromium` |
+| **ffmpeg** | לצפייה חיה ולתמונות חדות יותר | `sudo apt install ffmpeg`, או החבילה האופציונלית `ffmpeg-for-homebridge`. בלעדיו עדיין מקבלים תמונה סטטית |
+| `fonts-noto-color-emoji` | רק לאייקוני האימוג׳י של מזג האוויר | `sudo apt install fonts-noto-color-emoji`, או לכבות אייקונים בהגדרות |
+| גישה לאינטרנט אל **windy.com** (מכ״ם) ו‑**open-meteo.com** (מזג אוויר, חינמי, בלי מפתח) | חובה | אם אחד לא זמין, מוצגים התמונה האחרונה ומזג האוויר האחרון (עד 3 שעות) |
 
 ## התקנה
 
