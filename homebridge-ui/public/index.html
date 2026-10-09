@@ -76,6 +76,7 @@
 
   <h2 id="h_data"></h2>
   <div class="rows">
+    <div class="box"><label class="t" id="l_aspect"></label><div class="seg" id="aspSeg"></div><div class="hint" id="aspHint"></div></div>
     <div class="box"><label class="t" id="l_quality"></label><div class="seg" id="qualSeg"></div><div class="hint" id="qualHint"></div></div>
     <div class="box"><label class="t" id="l_units"></label><div class="seg" id="unitSeg"></div></div>
     <div class="box"><div class="sw"><span id="l_srain"></span><input type="checkbox" id="sRain"></div>
@@ -102,7 +103,7 @@
       title: 'Windy Camera', preview: 'Live preview', tpl: 'Choose a template', loc: 'Location', look: 'Look & position', data: 'Image, weather & sensors',
       name: 'Camera name', city: 'City', custom: 'Custom (enter coordinates)', pos: 'Position on the image', layout: 'Layout', theme: 'Theme', scale: 'Size', days: 'Forecast days', hours: 'Next hours',
       icons: 'Weather icons', cityShow: 'Show city name', rainBadge: 'Show "raining now" badge', stamp: 'Show update time',
-      quality: 'Radar image quality', units: 'Units', srain: 'Rain sensor (raining now?)', stemp: 'Outdoor temperature sensor', shum: 'Outdoor humidity sensor', live: 'Live view (needs ffmpeg)',
+      quality: 'Radar image quality', aspect: 'Image shape (aspect ratio)', asp: { '16:9': '16:9 – fills the Home screen', '4:3': '4:3', '13:9': '13:9 – old size' }, aspHint: 'Use 16:9 to avoid black bars in the Home app.', customSize: function (w, h) { return 'Custom size in config: ' + w + '×' + h + ' – pick a shape to replace it.'; }, units: 'Units', srain: 'Rain sensor (raining now?)', stemp: 'Outdoor temperature sensor', shum: 'Outdoor humidity sensor', live: 'Live view (needs ffmpeg)',
       adv: 'All settings', back: 'Back to designer', save: 'Save', saved: 'Saved. Restart Homebridge to apply.',
       previewNote: 'The preview uses sample weather. The real camera shows your live weather.',
       advNote: 'Need more? Open "All settings" for colors, fonts, custom CSS/HTML, Windy layer, intervals and more. Anything you set there overrides the template.',
@@ -115,7 +116,7 @@
       title: 'מצלמת Windy', preview: 'תצוגה מקדימה', tpl: 'בחרו תבנית', loc: 'מיקום', look: 'מראה ומיקום', data: 'תמונה, מזג אוויר וחיישנים',
       name: 'שם המצלמה', city: 'עיר', custom: 'מותאם אישית (הזנת קואורדינטות)', pos: 'מיקום על התמונה', layout: 'תבנית פריסה', theme: 'ערכת נושא', scale: 'גודל', days: 'ימי תחזית', hours: 'שעות קדימה',
       icons: 'אייקוני מזג אוויר', cityShow: 'הצג שם עיר', rainBadge: 'הצג "יורד גשם"', stamp: 'הצג שעת עדכון',
-      quality: 'איכות תמונת המכ״ם', units: 'יחידות', srain: 'חיישן גשם (יורד גשם עכשיו?)', stemp: 'חיישן טמפרטורה חיצונית', shum: 'חיישן לחות חיצונית', live: 'צפייה חיה (דורש ffmpeg)',
+      quality: 'איכות תמונת המכ״ם', aspect: 'צורת התמונה (יחס מידות)', asp: { '16:9': '16:9 – ממלא את מסך ההום', '4:3': '4:3', '13:9': '13:9 – הגודל הישן' }, aspHint: 'בחרו 16:9 כדי למנוע פסים שחורים באפליקציית הבית.', customSize: function (w, h) { return 'גודל מותאם בהגדרות: ' + w + '×' + h + ' – בחרו צורה כדי להחליף.'; }, units: 'יחידות', srain: 'חיישן גשם (יורד גשם עכשיו?)', stemp: 'חיישן טמפרטורה חיצונית', shum: 'חיישן לחות חיצונית', live: 'צפייה חיה (דורש ffmpeg)',
       adv: 'כל ההגדרות', back: 'חזרה למעצב', save: 'שמירה', saved: 'נשמר. הפעילו מחדש את Homebridge כדי להחיל.',
       previewNote: 'התצוגה המקדימה משתמשת במזג אוויר לדוגמה. המצלמה האמיתית מציגה מזג אוויר חי.',
       advNote: 'צריכים עוד? פתחו "כל ההגדרות" לצבעים, גופנים, CSS/HTML מותאם, שכבת Windy, תדירות ועוד. כל מה שתגדירו שם גובר על התבנית.',
@@ -205,8 +206,14 @@
     seg($('langSeg'), [['en', 'English'], ['he', 'עברית']], lang, function (l) { lang = l; cfg.language = l; if (!cfg.weather) cfg.weather = {}; cfg.weather.language = l; sync(); pushCfg(); });
     seg($('layoutSeg'), ['compact', 'card', 'detailed', 'banner'].map(function (k) { return [k, T.lay[k]]; }), o.layout, function (v) { setOv('layout', v); });
     seg($('themeSeg'), ['dark', 'light', 'glass', 'transparent'].map(function (k) { return [k, T.th[k]]; }), o.theme, function (v) { setOv('theme', v); });
-    seg($('qualSeg'), ['low', 'medium', 'high', 'ultra'].map(function (k) { return [k, T.q[k]]; }), cfg.quality || 'high', function (v) { cfg.quality = v; sync(); pushCfg(); });
-    $('qualHint').textContent = T.qh[cfg.quality || 'high'];
+    seg($('qualSeg'), ['low', 'medium', 'high', 'ultra'].map(function (k) { return [k, T.q[k]]; }), cfg.quality || 'high', function (v) { cfg.quality = v; delete cfg.width; delete cfg.height; delete cfg.jpegQuality; delete cfg.deviceScaleFactor; sync(); pushCfg(); });
+    var custom = cfg.width && cfg.height;
+    var asp = cfg.aspectRatio || '16:9';
+    var pr = W.preset(asp, cfg.quality || 'high');
+    $('qualHint').textContent = (custom ? cfg.width + '×' + cfg.height : pr.width + '×' + pr.height) + (!custom && pr.deviceScaleFactor > 1 ? ' @' + pr.deviceScaleFactor + 'x' : '');
+    $('l_aspect').textContent = T.aspect;
+    seg($('aspSeg'), W.ASPECTS.map(function (k) { return [k, T.asp[k]]; }), custom ? null : asp, function (v) { cfg.aspectRatio = v; delete cfg.width; delete cfg.height; delete cfg.jpegQuality; delete cfg.deviceScaleFactor; sync(); pushCfg(); });
+    $('aspHint').textContent = custom ? T.customSize(cfg.width, cfg.height) : T.aspHint;
     seg($('unitSeg'), ['metric', 'imperial'].map(function (k) { return [k, T.u[k]]; }), (cfg.weather && cfg.weather.units) || 'metric', function (v) { cfg.weather = cfg.weather || {}; cfg.weather.units = v; sync(); pushCfg(); });
 
     var pg = $('posGrid'); pg.innerHTML = '';

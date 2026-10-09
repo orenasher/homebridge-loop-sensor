@@ -88,8 +88,9 @@ Full example:
 | Option | Values | Default |
 | --- | --- | --- |
 | `language` | `en` (default) · `he` – language of the overlay, log messages and default names | `en` |
-| `quality` | `low` 800×550 · `medium` 1000×700 · `high` 1300×900 · `ultra` 1300×900 @2x | `high` |
-| `width`, `height`, `jpegQuality` | override the preset | – |
+| `aspectRatio` | `16:9` · `4:3` · `13:9` (the old 1300×900 shape). **Use 16:9 to avoid black bars in the Home app** | `16:9` |
+| `quality` | `low` · `medium` · `high` · `ultra` (2x sharpness, heavy). With 16:9: 960×540 · 1280×720 · 1600×900 · 1600×900 @2x | `high` |
+| `width`, `height`, `jpegQuality` | override the preset (an explicit width/height wins over aspectRatio) | – |
 | `captureIntervalMs` | ≥ 30000 | 120000 |
 | `windyOverlay` | `radar` `satellite` `rain` `clouds` `wind` `temp` | `radar` |
 | `zoom` | 3–12 | 9 |
@@ -134,6 +135,7 @@ Version 2 no longer needs **homebridge-camera-ui** or any helper script.
 
 | Symptom | Fix |
 | --- | --- |
+| Black bars on the sides in the Home app | Set `aspectRatio` to `16:9` (and remove a custom `width`/`height` such as 1300×900) |
 | Log: *Chromium was not found* | `sudo apt install chromium` or set `chromiumPath` |
 | Image never updates | Check the log for `Capture failed`; the Pi needs internet access to windy.com |
 | Squares instead of icons | `sudo apt install fonts-noto-color-emoji`, or set `overlay.icons` to off |
@@ -210,5 +212,6 @@ Homebridge UI ← Plugins ← חפשו `homebridge-windy-camera` ← Install. פ
 
 - *Chromium was not found* – `sudo apt install chromium`
 - התמונה לא מתעדכנת – חפשו `Capture failed` בלוג; נדרש אינטרנט ל‑windy.com
+- פסים שחורים בצדדים באפל הום – הגדירו `aspectRatio` ל‑`16:9` (והסירו `width`/`height` מותאמים כמו 1300×900)
 - ריבועים במקום אייקונים – `sudo apt install fonts-noto-color-emoji` או כבו `overlay.icons`
 - צפייה חיה לא עובדת – `sudo apt install ffmpeg`
