@@ -22,6 +22,11 @@
   .wc .tpl.on{ border-color:var(--acc); box-shadow:0 0 0 3px color-mix(in srgb, var(--acc) 25%, transparent); }
   .wc .tpl .stage{ border-radius:10px; }
   .wc .tpl .nm{ margin:8px 2px 2px; font-size:14px; font-weight:600; display:flex; justify-content:space-between; }
+  .wc .mcard{ border:2px solid var(--line); background:var(--card); border-radius:14px; padding:8px; cursor:pointer; text-align:start; color:var(--fg); }
+  .wc .mcard.on{ border-color:var(--acc); box-shadow:0 0 0 3px color-mix(in srgb, var(--acc) 25%, transparent); }
+  .wc .mcard .ms{ position:relative; aspect-ratio:16/10; border-radius:10px; overflow:hidden; background:#1b2330 center/cover no-repeat; }
+  .wc .mcard .ms:after{ content:""; position:absolute; inset:0; background:radial-gradient(ellipse 26% 22% at 40% 50%, rgba(250,204,21,.8), rgba(34,197,94,.65) 50%, transparent 72%), radial-gradient(ellipse 16% 14% at 64% 60%, rgba(239,68,68,.75), rgba(250,204,21,.6) 50%, transparent 72%); }
+  .wc .mcard .nm{ margin:8px 2px 2px; font-size:14px; font-weight:600; }
   .wc .rows{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
   .wc .box{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
   .wc .box label.t{ display:block; font-size:13px; font-weight:600; margin-bottom:8px; }
@@ -58,6 +63,15 @@
     <div class="box"><label class="t" id="l_name"></label><input type="text" id="name"></div>
     <div class="box"><label class="t" id="l_city"></label><select id="city"></select>
       <div id="custom" style="display:none;margin-top:8px;display:none;gap:8px"><input type="number" step="0.0001" id="lat" placeholder="lat"><input type="number" step="0.0001" id="lon" placeholder="lon" style="margin-top:6px"></div></div>
+  </div>
+
+  <h2 id="h_map"></h2>
+  <div class="grid" id="mapGrid"></div>
+  <div class="rows" id="mapOpts" style="margin-top:12px">
+    <div class="box"><div class="sw"><span id="l_mradar"></span><input type="checkbox" id="mRadar"></div>
+      <label class="t" id="l_mcol" style="margin-top:8px"></label><div class="seg" id="mColSeg"></div>
+      <div class="sw" style="margin-top:6px"><span id="l_mmark"></span><input type="checkbox" id="mMark"></div>
+      <div class="hint" id="mapHint"></div></div>
   </div>
 
   <h2 id="h_look"></h2>
@@ -100,7 +114,7 @@
   var W = window.WindyOverlay;
   var S = {
     en: {
-      title: 'Windy Camera', preview: 'Live preview', tpl: 'Choose a template', loc: 'Location', look: 'Look & position', data: 'Image, weather & sensors',
+      title: 'Windy Camera', map: 'Map style', mapNames: { windy: 'Windy (default)', satellite: 'Satellite photo', streets: 'Streets (OSM)', voyager: 'Colorful map', dark: 'Dark map', topo: 'Topographic' }, mradar: 'Show rain radar on the map', mcol: 'Radar colors', mmark: 'Mark my location', mapHint: 'Satellite / street / dark / topographic maps use free map tiles + RainViewer radar. “Windy” keeps the original Windy picture. Needs internet access to the tile servers.', preview: 'Live preview', tpl: 'Choose a template', loc: 'Location', look: 'Look & position', data: 'Image, weather & sensors',
       name: 'Camera name', city: 'City', custom: 'Custom (enter coordinates)', pos: 'Position on the image', layout: 'Layout', theme: 'Theme', scale: 'Size', days: 'Forecast days', hours: 'Next hours',
       icons: 'Weather icons', cityShow: 'Show city name', rainBadge: 'Show "raining now" badge', stamp: 'Show update time',
       quality: 'Radar image quality', aspect: 'Image shape (aspect ratio)', asp: { '16:9': '16:9 – fills the Home screen', '4:3': '4:3', '13:9': '13:9 – old size' }, aspHint: 'Use 16:9 to avoid black bars in the Home app.', customSize: function (w, h) { return 'Custom size in config: ' + w + '×' + h + ' – pick a shape to replace it.'; }, units: 'Units', srain: 'Rain sensor (raining now?)', stemp: 'Outdoor temperature sensor', shum: 'Outdoor humidity sensor', live: 'Live view (needs ffmpeg)',
@@ -113,7 +127,7 @@
       u: { metric: '°C · km/h', imperial: '°F · mph' }, rt: { motion: 'Motion sensor', leak: 'Leak sensor', occupancy: 'Occupancy sensor', contact: 'Contact sensor' }
     },
     he: {
-      title: 'מצלמת Windy', preview: 'תצוגה מקדימה', tpl: 'בחרו תבנית', loc: 'מיקום', look: 'מראה ומיקום', data: 'תמונה, מזג אוויר וחיישנים',
+      title: 'מצלמת Windy', map: 'סגנון מפה', mapNames: { windy: 'Windy (ברירת מחדל)', satellite: 'תמונת לוויין', streets: 'מפת רחובות (OSM)', voyager: 'מפה צבעונית', dark: 'מפה כהה', topo: 'טופוגרפית' }, mradar: 'הצג מכ״ם גשם על המפה', mcol: 'צבעי המכ״ם', mmark: 'סמן את המיקום שלי', mapHint: 'מפות לוויין / רחובות / כהה / טופוגרפית משתמשות באריחי מפה חינמיים + מכ״ם RainViewer. “Windy” משאיר את התמונה המקורית של Windy. נדרשת גישה לאינטרנט לשרתי המפות.', preview: 'תצוגה מקדימה', tpl: 'בחרו תבנית', loc: 'מיקום', look: 'מראה ומיקום', data: 'תמונה, מזג אוויר וחיישנים',
       name: 'שם המצלמה', city: 'עיר', custom: 'מותאם אישית (הזנת קואורדינטות)', pos: 'מיקום על התמונה', layout: 'תבנית פריסה', theme: 'ערכת נושא', scale: 'גודל', days: 'ימי תחזית', hours: 'שעות קדימה',
       icons: 'אייקוני מזג אוויר', cityShow: 'הצג שם עיר', rainBadge: 'הצג "יורד גשם"', stamp: 'הצג שעת עדכון',
       quality: 'איכות תמונת המכ״ם', aspect: 'צורת התמונה (יחס מידות)', asp: { '16:9': '16:9 – ממלא את מסך ההום', '4:3': '4:3', '13:9': '13:9 – הגודל הישן' }, aspHint: 'בחרו 16:9 כדי למנוע פסים שחורים באפליקציית הבית.', customSize: function (w, h) { return 'גודל מותאם בהגדרות: ' + w + '×' + h + ' – בחרו צורה כדי להחליף.'; }, units: 'יחידות', srain: 'חיישן גשם (יורד גשם עכשיו?)', stemp: 'חיישן טמפרטורה חיצונית', shum: 'חיישן לחות חיצונית', live: 'צפייה חיה (דורש ffmpeg)',
@@ -181,6 +195,19 @@
     });
   }
 
+  var TILE = { satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', streets: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', voyager: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', dark: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', topo: 'https://tile.opentopomap.org/{z}/{x}/{y}.png' };
+  function tileFor(lat, lon, z) { var n = Math.pow(2, z), r = lat * Math.PI / 180; return { x: Math.floor((lon + 180) / 360 * n), y: Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n) }; }
+  function buildMaps() {
+    var g = $('mapGrid'); g.innerHTML = ''; var cur = (cfg.map && cfg.map.style) || 'windy'; var tt = tileFor(32.2, 34.9, 8);
+    ['windy', 'satellite', 'voyager', 'streets', 'dark', 'topo'].forEach(function (id) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'mcard' + (cur === id ? ' on' : '');
+      var bg = id === 'windy' ? 'linear-gradient(135deg,#8b929a,#6f767e)' : 'url(' + TILE[id].replace('{z}', 8).replace('{x}', tt.x).replace('{y}', tt.y) + ')';
+      b.innerHTML = '<div class="ms" style="background-image:' + bg + '"></div><div class="nm">' + t().mapNames[id] + '</div>';
+      b.onclick = function () { cfg.map = cfg.map || {}; cfg.map.style = id; sync(); pushCfg(); };
+      g.appendChild(b);
+    });
+  }
+
   function seg(el, items, current, onPick) {
     el.innerHTML = '';
     items.forEach(function (it) {
@@ -239,7 +266,11 @@
     $('sRain').checked = sn.rain !== false; $('sTemp').checked = !!sn.temperature; $('sHum').checked = !!sn.humidity;
     var rt = $('rainType'); rt.innerHTML = ''; ['motion', 'leak', 'occupancy', 'contact'].forEach(function (k) { var op = document.createElement('option'); op.value = k; op.textContent = T.rt[k]; rt.appendChild(op); }); rt.value = sn.rainType || 'motion';
     $('live').checked = !(cfg.streaming && cfg.streaming.enabled === false);
-    buildGallery(); renderBig();
+    $('h_map').textContent = T.map; $('l_mradar').textContent = T.mradar; $('l_mcol').textContent = T.mcol; $('l_mmark').textContent = T.mmark; $('mapHint').textContent = T.mapHint;
+    var mp = cfg.map || {}; var tiles = mp.style && mp.style !== 'windy';
+    $('mRadar').checked = mp.radar !== false; $('mMark').checked = mp.marker !== false; $('mapOpts').style.display = tiles ? '' : 'none';
+    seg($('mColSeg'), [['rainbow', 'Rainbow'], ['twc', 'TWC'], ['nexrad', 'NEXRAD'], ['titan', 'TITAN']], mp.radarColors || 'rainbow', function (v) { cfg.map = cfg.map || {}; cfg.map.radarColors = v; sync(); pushCfg(); });
+    buildMaps(); buildGallery(); renderBig();
   }
 
   var advOpen = false;
@@ -261,6 +292,8 @@
     $('sTemp').onchange = function () { cfg.sensors = cfg.sensors || {}; cfg.sensors.temperature = this.checked; pushCfg(); };
     $('sHum').onchange = function () { cfg.sensors = cfg.sensors || {}; cfg.sensors.humidity = this.checked; pushCfg(); };
     $('rainType').onchange = function () { cfg.sensors = cfg.sensors || {}; cfg.sensors.rainType = this.value; pushCfg(); };
+    $('mRadar').onchange = function () { cfg.map = cfg.map || {}; cfg.map.radar = this.checked; pushCfg(); };
+    $('mMark').onchange = function () { cfg.map = cfg.map || {}; cfg.map.marker = this.checked; pushCfg(); };
     $('live').onchange = function () { cfg.streaming = cfg.streaming || {}; cfg.streaming.enabled = this.checked; pushCfg(); };
     $('saveBtn').onclick = function () {
       if (!window.homebridge) return;

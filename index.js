@@ -223,10 +223,10 @@ class WindyCameraPlatform {
     this.capturing = true;
     try {
       const fresh = this.weather && Date.now() - this.weather.fetchedAt < 3 * 3600 * 1000 ? this.weather : null;
-      await capture(this.cfg, fresh, this.imagePath);
+      await capture(this.cfg, fresh, this.imagePath, undefined, { onRadarFail: (m) => { if (!this.radarWarned) { this.radarWarned = true; this.log.warn(this.tr('radarFail', m)); } } });
       if (this.cfg.debug) this.log.info('Radar frame updated');
     } catch (e) {
-      this.log.warn(this.tr('captureFail', e.message));
+      this.log.warn(e && e.code === 'NO_TILES' ? this.tr('noTiles') : this.tr('captureFail', e.message));
     } finally {
       this.capturing = false;
     }

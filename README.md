@@ -118,6 +118,23 @@ Full example:
 
 HomeKit has no "rain" sensor, so choose the type that suits you. **Motion** (notifications + automations: "when motion is detected → …") is the most flexible. Contact: *open* = raining. Rain is detected when Open-Meteo reports measured precipitation above the threshold **or** a rain/drizzle/shower/thunderstorm weather code (configurable).
 
+## Map styles (colorful / satellite)
+
+By default the picture is the Windy map (gray base). In the settings screen ("Map style") or via the `map` block you can pick a more colorful base instead:
+
+| `map.style` | Look |
+|---|---|
+| `windy` | Windy website (default) |
+| `satellite` | Satellite photo (Esri World Imagery) |
+| `streets` | OpenStreetMap, colorful |
+| `voyager` | Soft colorful map (CARTO Voyager) |
+| `dark` | Dark map |
+| `topo` | Topographic map |
+| `custom` | Your own tile URL in `map.customTileUrl` (must contain `{z}`, `{x}`, `{y}`) |
+
+Other options: `map.radar` (show rain radar), `map.radarColors` (`rainbow`, `twc`, `nexrad`, `titan`, `original`, `blue`, `meteored`, `darksky`), `map.radarOpacity`, `map.marker`, `map.attribution`.
+Non-Windy styles use free map tiles plus RainViewer radar (max zoom 7, so the radar looks slightly softer than Windy). They need internet access to the tile servers; if no tiles load, the previous picture is kept and a warning is logged. Map credits are drawn on the image (can be turned off, please keep them where licenses require).
+
 ## How it works
 
 Every `captureIntervalMs` the plugin opens Windy's embedded map in headless Chromium, draws the weather card on top and saves one JPEG. HomeKit snapshots and the live view (ffmpeg → SRTP) serve that image. Weather comes from [Open-Meteo](https://open-meteo.com/). The plugin has no startup hooks and touches no files outside the Homebridge storage folder (`windy-camera/rain.jpg`).
@@ -185,6 +202,12 @@ Version 2 no longer needs **homebridge-camera-ui** or any helper script.
 Homebridge UI ← Plugins ← חפשו `homebridge-windy-camera` ← Install. פתחו **Settings**, בחרו עיר, שמרו, והפעילו מחדש.
 
 **הוספה לאפל הום:** המצלמה מתפרסמת כאביזר נפרד. ב‑Homebridge UI: **Status ← Unpaired Accessories ← Windy Camera ← Setup**, או באפליקציית הבית: **+ ← הוסף אביזר ← אפשרויות נוספות** והזינו את אותו קוד PIN של ה‑Bridge. החיישנים מופיעים אוטומטית.
+
+## סגנונות מפה (צבעוני / לוויין)
+
+כברירת מחדל התמונה היא מפת Windy (רקע אפור). במסך ההגדרות ("סגנון מפה") או בבלוק `map` אפשר לבחור רקע צבעוני יותר: `satellite` (צילום לוויין), `streets` (רחובות צבעוני), `voyager` (צבעים רכים), `dark` (כהה), `topo` (טופוגרפי), או `custom` (כתובת אריחים משלך ב-`map.customTileUrl` עם `{z}` `{x}` `{y}`).
+אפשרויות נוספות: `map.radar` (הצגת מכ״ם), `map.radarColors` (פלטת צבעי המכ״ם), `map.radarOpacity`, `map.marker`, `map.attribution`.
+הסגנונות שאינם Windy משתמשים באריחי מפה חינמיים ובמכ״ם של RainViewer (זום מקסימלי 7, לכן המכ״ם מעט פחות חד מ-Windy) ודורשים גישה לאינטרנט. אם האריחים לא נטענים, התמונה הקודמת נשמרת ומופיעה אזהרה בלוג.
 
 ## עיצוב עצמי
 
