@@ -24,8 +24,11 @@
   .wc .tpl .nm{ margin:8px 2px 2px; font-size:14px; font-weight:600; display:flex; justify-content:space-between; }
   .wc .mcard{ border:2px solid var(--line); background:var(--card); border-radius:14px; padding:8px; cursor:pointer; text-align:start; color:var(--fg); }
   .wc .mcard.on{ border-color:var(--acc); box-shadow:0 0 0 3px color-mix(in srgb, var(--acc) 25%, transparent); }
-  .wc .mcard .ms{ position:relative; aspect-ratio:16/10; border-radius:10px; overflow:hidden; background:#1b2330 center/cover no-repeat; }
-  .wc .mcard .ms:after{ content:""; position:absolute; inset:0; background:radial-gradient(ellipse 26% 22% at 40% 50%, rgba(250,204,21,.8), rgba(34,197,94,.65) 50%, transparent 72%), radial-gradient(ellipse 16% 14% at 64% 60%, rgba(239,68,68,.75), rgba(250,204,21,.6) 50%, transparent 72%); }
+  .wc .mcard .ms{ position:relative; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#1b2330; }
+  .wc .mcard .ms .mm{ position:absolute; left:0; top:0; width:200%; aspect-ratio:1; display:grid; grid-template-columns:1fr 1fr; }
+  .wc .mcard .ms .mm img{ width:100%; height:100%; display:block; }
+  .wc .mcard .ms .pin{ position:absolute; left:50%; top:50%; width:10px; height:10px; margin:-5px 0 0 -5px; border-radius:50%; background:#4f8cff; border:2px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.35); z-index:2; }
+  .wc .mcard .ms:after{ content:""; position:absolute; inset:0; background:radial-gradient(ellipse 22% 26% at 34% 38%, rgba(250,204,21,.8), rgba(34,197,94,.65) 50%, transparent 72%), radial-gradient(ellipse 14% 17% at 52% 70%, rgba(239,68,68,.75), rgba(250,204,21,.6) 50%, transparent 72%); }
   .wc .mcard .nm{ margin:8px 2px 2px; font-size:14px; font-weight:600; }
   .wc .rows{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
   .wc .box{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
@@ -195,14 +198,20 @@
     });
   }
 
-  var TILE = { satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', streets: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', voyager: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', dark: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', topo: 'https://tile.opentopomap.org/{z}/{x}/{y}.png' };
+  var TILE = { satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', streets: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', voyager: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', dark: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', topo: 'https://tile.opentopomap.org/{z}/{x}/{y}.png' };
   function tileFor(lat, lon, z) { var n = Math.pow(2, z), r = lat * Math.PI / 180; return { x: Math.floor((lon + 180) / 360 * n), y: Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n) }; }
   function buildMaps() {
-    var g = $('mapGrid'); g.innerHTML = ''; var cur = (cfg.map && cfg.map.style) || 'windy'; var tt = tileFor(32.2, 34.9, 8);
+    var g = $('mapGrid'); g.innerHTML = ''; var cur = (cfg.map && cfg.map.style) || 'windy';
+    var lat = typeof cfg.lat === 'number' ? cfg.lat : 32.3167, lon = typeof cfg.lon === 'number' ? cfg.lon : 34.9358, Z = 8, n = Math.pow(2, Z);
+    var xt = (lon + 180) / 360 * n, r = lat * Math.PI / 180, yt = (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n;
+    var x0 = Math.floor(xt - 0.5), y0 = Math.floor(yt - 0.3), fx = (xt - x0) / 2, fy = (yt - y0) / 2;
+    var tr = 'translate(' + (-(fx - 0.25) * 100) + '%,' + (-(fy - 0.140625) * 100) + '%)';
     ['windy', 'satellite', 'voyager', 'streets', 'dark', 'topo'].forEach(function (id) {
       var b = document.createElement('button'); b.type = 'button'; b.className = 'mcard' + (cur === id ? ' on' : '');
-      var bg = id === 'windy' ? 'linear-gradient(135deg,#8b929a,#6f767e)' : 'url(' + TILE[id].replace('{z}', 8).replace('{x}', tt.x).replace('{y}', tt.y) + ')';
-      b.innerHTML = '<div class="ms" style="background-image:' + bg + '"></div><div class="nm">' + t().mapNames[id] + '</div>';
+      var inner;
+      if (id === 'windy') inner = '<div class="mm" style="background:linear-gradient(135deg,#8b929a,#6f767e);transform:none;width:100%;height:100%"></div>';
+      else { var im = ''; for (var j = 0; j < 2; j++) for (var i = 0; i < 2; i++) im += '<img alt="" src="' + TILE[id].replace('{z}', Z).replace('{x}', x0 + i).replace('{y}', y0 + j) + '">'; inner = '<div class="mm" style="transform:' + tr + '">' + im + '</div>'; }
+      b.innerHTML = '<div class="ms">' + inner + '<span class="pin"></span></div><div class="nm">' + t().mapNames[id] + '</div>';
       b.onclick = function () { cfg.map = cfg.map || {}; cfg.map.style = id; sync(); pushCfg(); };
       g.appendChild(b);
     });

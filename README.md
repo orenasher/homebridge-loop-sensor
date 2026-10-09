@@ -127,8 +127,8 @@ By default the picture is the Windy map (gray base). In the settings screen ("Ma
 | `windy` | Windy website (default) |
 | `satellite` | Satellite photo (Esri World Imagery) |
 | `streets` | OpenStreetMap, colorful |
-| `voyager` | Soft colorful map (CARTO Voyager) |
-| `dark` | Dark map |
+| `voyager` | Colorful street map (Esri World Street Map) |
+| `dark` | Dark map (Esri Dark Gray) |
 | `topo` | Topographic map |
 | `custom` | Your own tile URL in `map.customTileUrl` (must contain `{z}`, `{x}`, `{y}`) |
 
