@@ -1,5 +1,7 @@
 # homebridge-loop-sensor
 
+[![Donate](https://img.shields.io/badge/Donate-PayPal-blue?logo=paypal)](https://paypal.me/orenasher)
+
 מתג + חיישן ל-HomeKit. **כשהמתג דלוק**, החיישן נדלק לרגע (ברירת מחדל 2 שניות) כל X זמן. **כשהמתג כבוי** – שום דבר לא רץ.
 
 A HomeKit switch that pulses a sensor every X minutes while it's on. When the switch is off, nothing runs (no timers at all).
@@ -78,3 +80,7 @@ MIT © Oren Asher
   }
 ]
 ```
+
+## Support
+
+If this plugin saves you time, you can buy me a coffee: [paypal.me/orenasher](https://paypal.me/orenasher). Thank you!
