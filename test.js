@@ -266,3 +266,22 @@ test('guard: AC on + any window open for delay -> fires once; all closed cancels
   third.platform.loops[0].stop();
   mock.timers.reset();
 });
+
+test('switch mode: plain dummy switch, no sensor, no timers, remembers state', () => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  const cfg = { loops: [{ name: 'Dummy', mode: 'switch' }] };
+  const { platform, api } = boot(cfg);
+  const d = platform.loops[0];
+  assert.ok(!d.accessory.services.some((s) => s.subtype === 'sensor'), 'no sensor service');
+  d.onChar.setter(true);
+  assert.strictEqual(d.onChar.getter(), true);
+  for (let i = 0; i < 3600; i++) mock.timers.tick(1000);
+  assert.strictEqual(d.onChar.getter(), true, 'stays on, nothing scheduled');
+  assert.strictEqual(d.cycleTimer, null);
+  platform.loops.forEach((l) => l.stop(false));
+  const again = boot(cfg, api.registered);
+  assert.strictEqual(again.platform.loops[0].onChar.getter(), true, 'state restored');
+  again.platform.loops[0].onChar.setter(false);
+  assert.strictEqual(again.platform.loops[0].onChar.getter(), false);
+  mock.timers.reset();
+});

@@ -96,6 +96,12 @@
                   "enum": [
                     "once"
                   ]
+                },
+                {
+                  "title": "מתג דמה – רק מתג, בלי חיישן ובלי תזמון",
+                  "enum": [
+                    "switch"
+                  ]
                 }
               ]
             },
@@ -326,7 +332,10 @@
                 },
                 {
                   "key": "loops[].sensorType",
-                  "flex": "1 1 0"
+                  "flex": "1 1 0",
+                  "condition": {
+                    "functionBody": "return model.loops?.[arguments[1]]?.mode !== 'switch';"
+                  }
                 }
               ]
             },
@@ -338,22 +347,31 @@
               "items": [
                 {
                   "key": "loops[].interval",
-                  "flex": "1 1 0"
+                  "flex": "1 1 0",
+                  "condition": {
+                    "functionBody": "return model.loops?.[arguments[1]]?.mode !== 'switch';"
+                  }
                 },
                 {
                   "key": "loops[].intervalUnit",
-                  "flex": "1 1 0"
+                  "flex": "1 1 0",
+                  "condition": {
+                    "functionBody": "return model.loops?.[arguments[1]]?.mode !== 'switch';"
+                  }
                 },
                 {
                   "key": "loops[].pulseSeconds",
-                  "flex": "1 1 0"
+                  "flex": "1 1 0",
+                  "condition": {
+                    "functionBody": "return model.loops?.[arguments[1]]?.mode !== 'switch';"
+                  }
                 }
               ]
             },
             {
               "key": "loops[].startMode",
               "condition": {
-                "functionBody": "return model.loops?.[arguments[1]]?.mode !== 'once';"
+                "functionBody": "const m = model.loops?.[arguments[1]]?.mode; return m !== 'once' && m !== 'switch';"
               }
             },
             {
@@ -365,12 +383,17 @@
                 {
                   "key": "loops[].autoOffMinutes",
                   "condition": {
-                    "functionBody": "return model.loops?.[arguments[1]]?.mode !== 'once';"
+                    "functionBody": "const m = model.loops?.[arguments[1]]?.mode; return m !== 'once' && m !== 'switch';"
                   }
                 },
                 "loops[].rememberState",
                 "loops[].switchName",
-                "loops[].sensorName",
+                {
+                  "key": "loops[].sensorName",
+                  "condition": {
+                    "functionBody": "return model.loops?.[arguments[1]]?.mode !== 'switch';"
+                  }
+                },
                 "loops[].debug"
               ]
             }

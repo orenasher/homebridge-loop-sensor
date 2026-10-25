@@ -111,6 +111,7 @@ class Loop {
     const pulseSec = Number(cfg.pulseSeconds) > 0 ? Number(cfg.pulseSeconds) : 2;
     this.pulseMs = Math.min(Math.round(pulseSec * 1000), this.intervalMs - 1000);
     this.once = cfg.mode === 'once';
+    this.dummy = cfg.mode === 'switch'; // plain switch: no sensor, no timers
     this.pulseOnStart = cfg.startMode
       ? cfg.startMode !== 'afterInterval'
       : cfg.pulseOnStart !== false;
@@ -126,7 +127,8 @@ class Loop {
       .setCharacteristic(C.SerialNumber, accessory.UUID.slice(0, 12));
 
     // Drop services left over from a previous config (sensor/switch type changed)
-    const keep = new Set([S.AccessoryInformation.UUID, switchService.UUID, S[this.sensorDef.service].UUID]);
+    const keep = new Set([S.AccessoryInformation.UUID, switchService.UUID]);
+    if (!this.dummy) keep.add(S[this.sensorDef.service].UUID);
     accessory.services.filter((s) => !keep.has(s.UUID)).forEach((s) => accessory.removeService(s));
 
     const switchName = cfg.switchName || cfg.name;
@@ -134,14 +136,17 @@ class Loop {
 
     this.switch = accessory.getServiceById(switchService, 'switch')
       || accessory.addService(switchService, switchName, 'switch');
-    this.sensor = accessory.getServiceById(S[this.sensorDef.service], 'sensor')
-      || accessory.addService(S[this.sensorDef.service], sensorName, 'sensor');
     this.setNames(this.switch, switchName);
-    this.setNames(this.sensor, sensorName);
     this.switch.setPrimaryService(true);
 
-    this.sensorChar = this.sensor.getCharacteristic(C[this.sensorDef.char]);
-    this.sensorChar.updateValue(this.sensorDef.idle(C));
+    this.sensorChar = null;
+    if (!this.dummy) {
+      this.sensor = accessory.getServiceById(S[this.sensorDef.service], 'sensor')
+        || accessory.addService(S[this.sensorDef.service], sensorName, 'sensor');
+      this.setNames(this.sensor, sensorName);
+      this.sensorChar = this.sensor.getCharacteristic(C[this.sensorDef.char]);
+      this.sensorChar.updateValue(this.sensorDef.idle(C));
+    }
 
     this.onChar = this.switch.getCharacteristic(C.On);
     this.onChar
@@ -173,6 +178,11 @@ class Loop {
     this.accessory.context.on = true;
     this.onChar.updateValue(true);
 
+    if (this.dummy) {
+      if (this.debug) this.log.info(`${this.name}: on`);
+      return;
+    }
+
     if (this.once) {
       // Countdown: pulse the sensor once when time is up, then turn the switch off.
       const now = Date.now();
@@ -203,7 +213,7 @@ class Loop {
     clearTimeout(this.pulseTimer);
     clearTimeout(this.autoOffTimer);
     this.cycleTimer = this.pulseTimer = this.autoOffTimer = null;
-    this.sensorChar.updateValue(this.sensorDef.idle(this.C));
+    if (this.sensorChar) this.sensorChar.updateValue(this.sensorDef.idle(this.C));
     if (!this.running) return;
     this.running = false;
     if (persist) {
@@ -211,7 +221,8 @@ class Loop {
       delete this.accessory.context.endAt;
     }
     this.onChar.updateValue(false);
-    this.log.info(`${this.name}: loop stopped`);
+    if (!this.dummy) this.log.info(`${this.name}: loop stopped`);
+    else if (this.debug) this.log.info(`${this.name}: off`);
   }
 
   // Single timer chain: only one pending timer per loop, and none while off.
