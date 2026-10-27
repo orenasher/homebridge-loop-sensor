@@ -204,7 +204,7 @@ class WindyCameraPlatform {
       this.rainStreak = raw ? (this.rainStreak || 0) + 1 : 0;
       c.rainingRaw = raw;
       c.raining = raw && this.rainStreak >= (this.cfg.weather.rainConfirmReadings || 1);
-      this.log.info(this.tr('weather', { t: c.temp, h: c.humidity, c: c.weatherCode, r: c.raining, w: raw }));
+      this.log.info(this.tr('weather', { t: c.temp, h: c.humidity, c: c.weatherCode, r: c.raining, w: raw, p: Math.max(c.precipitation || 0, c.rain || 0, c.showers || 0) }));
       this.updateSensors();
     } catch (e) {
       this.log.warn(this.tr('weatherFail', e.message));
