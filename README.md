@@ -106,6 +106,7 @@ Full example:
 | `sensors.rainType` | `motion` `leak` `occupancy` `contact` | `motion` |
 | `weather.rainDetection` | `both` `precipitation` `weatherCode` | `both` |
 | `weather.rainThresholdMm` | mm | 0.1 |
+| `weather.rainConfirmReadings` | 1-6; rain must appear in this many consecutive refreshes before the sensor turns on (turns off immediately). Reduces false alerts | 2 |
 | `cameraMode` | `external` `bridged` | `external` |
 
 ### Design it yourself
@@ -221,6 +222,8 @@ Homebridge UI ← Plugins ← חפשו `homebridge-windy-camera` ← Install. פ
 ## חיישן הגשם
 
 ב‑HomeKit אין חיישן גשם, לכן בוחרים סוג (`sensors.rainType`). **חיישן תנועה** הוא הגמיש ביותר להתראות ואוטומציות. גשם מזוהה לפי כמות משקעים שנמדדה או לפי קוד מזג אוויר של גשם/טפטוף/ממטרים/סופת רעמים (ניתן לשינוי ב‑`weather.rainDetection`).
+
+**התראות שווא:** החיישן נדלק רק אחרי שהגשם דווח ב‑`weather.rainConfirmReadings` רענוני מזג אוויר רצופים (ברירת מחדל 2) וכבה מיד בקריאה יבשה הראשונה. אם עדיין יש התראות שווא, הגדירו `weather.rainDetection: "precipitation"` ו‑`weather.rainThresholdMm: 0.3`.
 
 ## שדרוג מגרסה 1.x
 

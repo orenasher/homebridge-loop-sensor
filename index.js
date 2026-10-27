@@ -198,7 +198,13 @@ class WindyCameraPlatform {
     try {
       this.weather = await fetchWeather(this.cfg.lat, this.cfg.lon, this.cfg.weather);
       const c = this.weather.current;
-      this.log.info(this.tr('weather', { t: c.temp, h: c.humidity, c: c.weatherCode, r: c.raining }));
+      // Rain must be seen in N consecutive readings before the sensor turns on (filters one-off model "showers");
+      // it turns off right away on the first dry reading.
+      const raw = !!c.raining;
+      this.rainStreak = raw ? (this.rainStreak || 0) + 1 : 0;
+      c.rainingRaw = raw;
+      c.raining = raw && this.rainStreak >= (this.cfg.weather.rainConfirmReadings || 1);
+      this.log.info(this.tr('weather', { t: c.temp, h: c.humidity, c: c.weatherCode, r: c.raining, w: raw }));
       this.updateSensors();
     } catch (e) {
       this.log.warn(this.tr('weatherFail', e.message));
