@@ -75,6 +75,7 @@
       <label class="t" id="l_mcol" style="margin-top:8px"></label><div class="seg" id="mColSeg"></div>
       <div class="sw" style="margin-top:6px"><span id="l_mmark"></span><input type="checkbox" id="mMark"></div>
       <div class="hint" id="mapHint"></div></div>
+    <div class="box" id="mapExtra"></div>
   </div>
 
   <h2 id="h_look"></h2>
@@ -89,6 +90,7 @@
       <div class="sw"><span id="l_city_show"></span><input type="checkbox" id="showCity"></div>
       <div class="sw"><span id="l_rainbadge"></span><input type="checkbox" id="showRain"></div>
       <div class="sw"><span id="l_stamp"></span><input type="checkbox" id="showStamp"></div></div>
+    <div class="box" id="ovExtra"></div>
   </div>
 
   <h2 id="h_data"></h2>
@@ -102,6 +104,8 @@
       <div class="sw"><span id="l_shum"></span><input type="checkbox" id="sHum"></div>
       <div class="hint" id="rainHint"></div></div>
     <div class="box"><div class="sw"><span id="l_live"></span><input type="checkbox" id="live"></div><div class="hint" id="liveHint"></div></div>
+    <div class="box" id="sensorExtra"></div>
+    <div class="box" id="confirmBox"></div>
   </div>
   <div class="note" id="advNote"></div>
 
@@ -228,6 +232,36 @@
   function eff() { return W.normalizeOverlay(cfg.overlay, cfg.template || 'classic', true); }
   function setOv(k, v) { cfg.overlay = cfg.overlay || {}; cfg.overlay[k] = v; sync(); pushCfg(); }
 
+
+  var X = {
+    en: { sens: 'More sensors', soon: 'Rain soon (next hour)', storm: 'Storm', windy: 'Strong wind', uv: 'High UV', confirm: 'Confirm rain with the radar', cNone: 'Off (weather model only)', cRadar: 'Model + radar', cOnly: 'Radar only', cHint: 'Fewer false rain alerts. If the radar cannot be read, the weather model is used.',
+      mx: 'Map extras', clouds: 'Clouds (infrared satellite)', anim: 'Animated radar in the live view', mxHint: 'Works with the satellite / streets / dark / topo map styles only (not Windy).', ox: 'Overlay extras', sun: 'Sunrise / sunset', wdir: 'Wind direction arrow', uvs: 'UV index', auto: 'Dark theme at night' },
+    he: { sens: 'חיישנים נוספים', soon: 'גשם בקרוב (בשעה הקרובה)', storm: 'סערה', windy: 'רוח חזקה', uv: 'קרינת UV גבוהה', confirm: 'אישור גשם במכ״ם', cNone: 'כבוי (מודל מזג אוויר בלבד)', cRadar: 'מודל + מכ״ם', cOnly: 'מכ״ם בלבד', cHint: 'פחות התראות שווא. אם אי אפשר לקרוא את המכ״ם משתמשים במודל.',
+      mx: 'תוספות למפה', clouds: 'עננים (לוויין אינפרא‑אדום)', anim: 'מכ״ם מונפש בצפייה החיה', mxHint: 'עובד רק עם סגנונות לוויין / רחובות / כהה / טופוגרפי (לא Windy).', ox: 'תוספות לשכבת המידע', sun: 'זריחה / שקיעה', wdir: 'חץ כיוון רוח', uvs: 'מדד UV', auto: 'ערכת נושא כהה בלילה' }
+  };
+  function togBox(host, title, items, hint) {
+    host.innerHTML = '<label class="t">' + title + '</label>';
+    items.forEach(function (it) {
+      var d = document.createElement('div'); d.className = 'sw';
+      var sp = document.createElement('span'); sp.textContent = it[0];
+      var c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!it[1]; c.onchange = function () { it[2](this.checked); };
+      d.appendChild(sp); d.appendChild(c); host.appendChild(d);
+    });
+    if (hint) { var h = document.createElement('div'); h.className = 'hint'; h.textContent = hint; host.appendChild(h); }
+  }
+  function setIn(group, key) { return function (v) { cfg[group] = cfg[group] || {}; cfg[group][key] = v; pushCfg(); }; }
+  function extras(o) {
+    var x = X[lang], sn = cfg.sensors || {}, mp = cfg.map || {}, wc = cfg.weather || {};
+    togBox($('sensorExtra'), x.sens, [[x.soon, sn.rainSoon, setIn('sensors', 'rainSoon')], [x.storm, sn.storm, setIn('sensors', 'storm')], [x.windy, sn.windy, setIn('sensors', 'windy')], [x.uv, sn.uvHigh, setIn('sensors', 'uvHigh')]]);
+    var cb = $('confirmBox'); cb.innerHTML = '<label class="t">' + x.confirm + '</label>';
+    var sel = document.createElement('select');
+    [['none', x.cNone], ['radar', x.cRadar], ['radarOnly', x.cOnly]].forEach(function (a) { var op = document.createElement('option'); op.value = a[0]; op.textContent = a[1]; sel.appendChild(op); });
+    sel.value = wc.rainConfirm || 'none'; sel.onchange = function () { cfg.weather = cfg.weather || {}; cfg.weather.rainConfirm = this.value; pushCfg(); };
+    cb.appendChild(sel); var h = document.createElement('div'); h.className = 'hint'; h.textContent = x.cHint; cb.appendChild(h);
+    togBox($('mapExtra'), x.mx, [[x.clouds, mp.clouds, setIn('map', 'clouds')], [x.anim, mp.animation, setIn('map', 'animation')]], x.mxHint);
+    togBox($('ovExtra'), x.ox, [[x.sun, o.showSun, function (v) { setOv('showSun', v); }], [x.wdir, o.showWindDir, function (v) { setOv('showWindDir', v); }], [x.uvs, o.showUv, function (v) { setOv('showUv', v); }], [x.auto, o.autoTheme, function (v) { setOv('autoTheme', v); }]]);
+  }
+
   function sync() {
     var T = t(); var o = eff();
     document.documentElement.setAttribute('dir', lang === 'he' ? 'rtl' : 'ltr');
@@ -279,6 +313,7 @@
     var mp = cfg.map || {}; var tiles = mp.style && mp.style !== 'windy';
     $('mRadar').checked = mp.radar !== false; $('mMark').checked = mp.marker !== false; $('mapOpts').style.display = tiles ? '' : 'none';
     seg($('mColSeg'), [['rainbow', 'Rainbow'], ['twc', 'TWC'], ['nexrad', 'NEXRAD'], ['titan', 'TITAN']], mp.radarColors || 'rainbow', function (v) { cfg.map = cfg.map || {}; cfg.map.radarColors = v; sync(); pushCfg(); });
+    extras(o);
     buildMaps(); buildGallery(); renderBig();
   }
 
