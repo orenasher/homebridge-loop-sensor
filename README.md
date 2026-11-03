@@ -136,6 +136,22 @@ By default the picture is the Windy map (gray base). In the settings screen ("Ma
 Other options: `map.radar` (show rain radar), `map.radarColors` (`rainbow`, `twc`, `nexrad`, `titan`, `original`, `blue`, `meteored`, `darksky`), `map.radarOpacity`, `map.marker`, `map.attribution`.
 Non-Windy styles use free map tiles plus RainViewer radar (max zoom 7, so the radar looks slightly softer than Windy). They need internet access to the tile servers; if no tiles load, the previous picture is kept and a warning is logged. Map credits are drawn on the image (can be turned off, please keep them where licenses require).
 
+## New in 2.5 (everything is OFF by default - your current setup does not change)
+
+Turn on only what you want, in the settings screen or JSON.
+
+**More sensors** (`sensors.*`, each also has a `*Name`): `rainSoon` (rain expected within `weather.soonMinutes`, default 60), `storm` (thunderstorm code, gusts >= `stormGustKmh` 60, or >= `stormHeavyMm` 4 mm), `windy` (wind >= `windyKmh` 35), `uvHigh` (UV >= `uvHighIndex` 6). They use the same sensor type as the rain sensor (`rainType`).
+
+**Confirm rain with the radar** - `weather.rainConfirm`: `none` (default), `radar` (rain only if the weather model **and** a radar echo at your location agree - fewer false alerts), `radarOnly` (radar echo only). Tune with `weather.radarRadiusPx` (default 2). If the radar can't be read, the weather model is used.
+
+**Backup weather source** - `weather.fallback`: `metno` (default; if Open-Meteo is down the plugin uses MET Norway) or `none`.
+
+**Animated radar in the live view** - `map.animation: true` (+ `animationFrames` 2-12, `animationFps` 1-10). Needs a non-Windy map style (e.g. `satellite`). Snapshots stay a still picture; the live view loops the last radar frames with the time shown.
+
+**Clouds (infrared satellite)** - `map.clouds: true`, `map.cloudsOpacity`. Non-Windy styles only.
+
+**Overlay extras** (`overlay.*`): `showSun` (sunrise/sunset), `showWindDir` (wind arrow), `showUv`, `autoTheme` (light theme turns dark at night).
+
 ## How it works
 
 Every `captureIntervalMs` the plugin opens Windy's embedded map in headless Chromium, draws the weather card on top and saves one JPEG. HomeKit snapshots and the live view (ffmpeg → SRTP) serve that image. Weather comes from [Open-Meteo](https://open-meteo.com/). The plugin has no startup hooks and touches no files outside the Homebridge storage folder (`windy-camera/rain.jpg`).
@@ -224,6 +240,22 @@ Homebridge UI ← Plugins ← חפשו `homebridge-windy-camera` ← Install. פ
 ב‑HomeKit אין חיישן גשם, לכן בוחרים סוג (`sensors.rainType`). **חיישן תנועה** הוא הגמיש ביותר להתראות ואוטומציות. גשם מזוהה לפי כמות משקעים שנמדדה או לפי קוד מזג אוויר של גשם/טפטוף/ממטרים/סופת רעמים (ניתן לשינוי ב‑`weather.rainDetection`).
 
 **התראות שווא:** החיישן נדלק רק אחרי שהגשם דווח ב‑`weather.rainConfirmReadings` רענוני מזג אוויר רצופים (ברירת מחדל 2) וכבה מיד בקריאה יבשה הראשונה. אם עדיין יש התראות שווא, הגדירו `weather.rainDetection: "precipitation"` ו‑`weather.rainThresholdMm: 0.3`.
+
+## חדש בגרסה 2.5 (הכול כבוי כברירת מחדל - ההגדרה הקיימת שלכם לא משתנה)
+
+מפעילים רק מה שרוצים, במסך ההגדרות או ב‑JSON.
+
+**חיישנים נוספים** (`sensors.*`, לכל אחד גם `*Name`): `rainSoon` (גשם צפוי בתוך `weather.soonMinutes`, ברירת מחדל 60 דקות), `storm` (קוד סופת רעמים, משבים מעל `stormGustKmh` 60, או מעל `stormHeavyMm` 4 מ״מ), `windy` (רוח מעל `windyKmh` 35), `uvHigh` (UV מעל `uvHighIndex` 6). הם באותו סוג חיישן כמו חיישן הגשם (`rainType`).
+
+**אישור גשם במכ״ם** - `weather.rainConfirm`: `none` (ברירת מחדל), `radar` (גשם רק אם מודל מזג האוויר **וגם** ההד במכ״ם במיקום שלכם מסכימים - פחות התראות שווא), `radarOnly` (רק מכ״ם). כוונון: `weather.radarRadiusPx` (ברירת מחדל 2). אם אי אפשר לקרוא את המכ״ם משתמשים במודל.
+
+**מקור מזג אוויר גיבוי** - `weather.fallback`: `metno` (ברירת מחדל; אם Open-Meteo לא זמין עוברים ל‑MET Norway) או `none`.
+
+**מכ״ם מונפש בצפייה חיה** - `map.animation: true` (+ `animationFrames` 2-12, `animationFps` 1-10). דורש סגנון מפה שאינו Windy (למשל `satellite`). תמונת התצוגה המקדימה נשארת סטטית; בצפייה החיה רצות לולאה של התמונות האחרונות עם שעה.
+
+**עננים (לוויין אינפרא‑אדום)** - `map.clouds: true`, `map.cloudsOpacity`. רק בסגנונות שאינם Windy.
+
+**תוספות לשכבת המידע** (`overlay.*`): `showSun` (זריחה/שקיעה), `showWindDir` (חץ כיוון רוח), `showUv`, `autoTheme` (ערכת נושא בהירה הופכת כהה בלילה).
 
 ## שדרוג מגרסה 1.x
 

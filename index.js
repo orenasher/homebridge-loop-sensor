@@ -5,6 +5,7 @@ const path = require('path');
 const { normalize } = require('./lib/config');
 const { fetchWeather } = require('./lib/weather');
 const { capture } = require('./lib/capture');
+const { radarHit } = require('./lib/radarcheck');
 const { WindyCameraDelegate } = require('./lib/camera');
 const { t } = require('./lib/i18n');
 
@@ -42,7 +43,8 @@ class WindyCameraPlatform {
 
     this.uuidCamera = this.hap.uuid.generate(`${PLUGIN_NAME}:camera:${this.cfg.name}`);
     this.uuidSensors = this.hap.uuid.generate(`${PLUGIN_NAME}:sensors:${this.cfg.name}`);
-    this.delegate = new WindyCameraDelegate(this.hap, this.log, this.cfg, () => this.currentImage());
+    this.anim = { time: 0 };
+    this.delegate = new WindyCameraDelegate(this.hap, this.log, this.cfg, () => this.currentImage(), () => this.framesInfo());
 
     api.on('didFinishLaunching', () => this.start());
     api.on('shutdown', () => this.shutdown());
@@ -59,6 +61,17 @@ class WindyCameraPlatform {
   currentImage() {
     if (fs.existsSync(this.imagePath)) return this.imagePath;
     return this.placeholderPath();
+  }
+
+  // Animated radar loop (frames written by capture.js); null -> the live view shows the still picture.
+  framesInfo() {
+    if (!this.cfg.map.animation) return null;
+    try {
+      const dir = path.join(path.dirname(this.imagePath), 'frames');
+      const j = JSON.parse(fs.readFileSync(path.join(dir, 'frames.json'), 'utf8'));
+      if (!j.count || Date.now() - j.written > 3 * 3600 * 1000 || !fs.existsSync(path.join(dir, 'f0.jpg'))) return null;
+      return { pattern: path.join(dir, 'f%d.jpg'), fps: j.fps || this.cfg.map.animationFps, count: j.count };
+    } catch (e) { return null; }
   }
 
   placeholderPath() {
@@ -118,7 +131,7 @@ class WindyCameraPlatform {
 
   setupSensors() {
     const s = this.cfg.sensors;
-    const want = s.rain || s.temperature || s.humidity;
+    const want = s.rain || s.temperature || s.humidity || s.rainSoon || s.storm || s.windy || s.uvHigh;
     const cached = this.cachedAccessories.get(this.uuidSensors);
     if (!want) {
       if (cached) this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [cached]);
@@ -149,6 +162,12 @@ class WindyCameraPlatform {
       const svc = ensure(type, s.rainName, 'rain-' + s.rainType);
       this.sensorServices.rain = { svc, charName };
     }
+    // extra on/off sensors use the same HomeKit sensor type as the rain sensor
+    [['rainSoon', 'soon'], ['storm', 'storm'], ['windy', 'wind'], ['uvHigh', 'uv']].forEach(([key, id]) => {
+      if (!s[key]) return;
+      const [type, charName] = kinds[s.rainType];
+      this.sensorServices[key] = { svc: ensure(type, s[key + 'Name'], id + '-' + s.rainType), charName };
+    });
     if (s.temperature) {
       const svc = ensure(Service.TemperatureSensor, s.temperatureName, 'temp');
       svc.getCharacteristic(Characteristic.CurrentTemperature).setProps({ minValue: -50, maxValue: 70 });
@@ -180,15 +199,20 @@ class WindyCameraPlatform {
     if (!this.weather) return;
     const { Characteristic } = this.hap;
     const cur = this.weather.current;
-    const r = this.sensorServices.rain;
-    if (r) {
+    const setBool = (entry, on) => {
+      if (!entry) return;
       let value;
-      if (r.charName === 'ContactSensorState') value = cur.raining ? Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED;
-      else if (r.charName === 'LeakDetected') value = cur.raining ? Characteristic.LeakDetected.LEAK_DETECTED : Characteristic.LeakDetected.LEAK_NOT_DETECTED;
-      else if (r.charName === 'OccupancyDetected') value = cur.raining ? Characteristic.OccupancyDetected.OCCUPANCY_DETECTED : Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED;
-      else value = !!cur.raining;
-      r.svc.updateCharacteristic(Characteristic[r.charName], value);
-    }
+      if (entry.charName === 'ContactSensorState') value = on ? Characteristic.ContactSensorState.CONTACT_NOT_DETECTED : Characteristic.ContactSensorState.CONTACT_DETECTED;
+      else if (entry.charName === 'LeakDetected') value = on ? Characteristic.LeakDetected.LEAK_DETECTED : Characteristic.LeakDetected.LEAK_NOT_DETECTED;
+      else if (entry.charName === 'OccupancyDetected') value = on ? Characteristic.OccupancyDetected.OCCUPANCY_DETECTED : Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED;
+      else value = !!on;
+      entry.svc.updateCharacteristic(Characteristic[entry.charName], value);
+    };
+    setBool(this.sensorServices.rain, cur.raining);
+    setBool(this.sensorServices.rainSoon, cur.rainSoon);
+    setBool(this.sensorServices.storm, cur.storm);
+    setBool(this.sensorServices.windy, cur.windy);
+    setBool(this.sensorServices.uvHigh, cur.uvHigh);
     if (this.sensorServices.temp) this.sensorServices.temp.updateCharacteristic(Characteristic.CurrentTemperature, cur.temp);
     if (this.sensorServices.hum) this.sensorServices.hum.updateCharacteristic(Characteristic.CurrentRelativeHumidity, cur.humidity);
   }
@@ -196,11 +220,24 @@ class WindyCameraPlatform {
   // ---------- weather + capture ----------
   async refreshWeather() {
     try {
-      this.weather = await fetchWeather(this.cfg.lat, this.cfg.lon, this.cfg.weather);
+      this.weather = await fetchWeather(this.cfg.lat, this.cfg.lon, this.cfg.weather, this.weather && this.weather.timezone);
       const c = this.weather.current;
+      if (this.weather.fellBack && !this.fallbackWarned) { this.fallbackWarned = true; this.log.warn(this.tr('fallbackUsed')); }
+      if (!this.weather.fellBack) this.fallbackWarned = false;
+      // optional confirmation against the real radar (RainViewer): is there an echo near the location?
+      let raw = !!c.raining;
+      const mode = this.cfg.weather.rainConfirm;
+      if (mode !== 'none') {
+        const r = await radarHit(this.cfg.lat, this.cfg.lon, this.cfg.weather.radarRadiusPx);
+        if (r) {
+          raw = mode === 'radarOnly' ? r.hit : (raw && r.hit);
+          c.radarHit = r.hit;
+          this.radarCheckWarned = false;
+          if (this.cfg.debug) this.log.info(this.tr('radarCheck', { h: r.hit, t: r.frameTime, r: raw }));
+        } else if (!this.radarCheckWarned) { this.radarCheckWarned = true; this.log.warn(this.tr('radarCheckFail')); }
+      }
       // Rain must be seen in N consecutive readings before the sensor turns on (filters one-off model "showers");
       // it turns off right away on the first dry reading.
-      const raw = !!c.raining;
       this.rainStreak = raw ? (this.rainStreak || 0) + 1 : 0;
       c.rainingRaw = raw;
       c.raining = raw && this.rainStreak >= (this.cfg.weather.rainConfirmReadings || 1);
@@ -229,7 +266,13 @@ class WindyCameraPlatform {
     this.capturing = true;
     try {
       const fresh = this.weather && Date.now() - this.weather.fetchedAt < 3 * 3600 * 1000 ? this.weather : null;
-      await capture(this.cfg, fresh, this.imagePath, undefined, { onRadarFail: (m) => { if (!this.radarWarned) { this.radarWarned = true; this.log.warn(this.tr('radarFail', m)); } } });
+      await capture(this.cfg, fresh, this.imagePath, undefined, {
+        anim: this.anim,
+        onRadarFail: (m) => { if (!this.radarWarned) { this.radarWarned = true; this.log.warn(this.tr('radarFail', m)); } },
+        onAnimFail: (m) => { if (!this.animWarned) { this.animWarned = true; this.log.warn(this.tr('animFail', m)); } },
+      });
+      const fi = this.framesInfo();
+      if (fi && !this.animAnnounced) { this.animAnnounced = true; this.log.info(this.tr('animReady', { n: fi.count })); }
       if (this.cfg.debug) this.log.info('Radar frame updated');
     } catch (e) {
       this.log.warn(e && e.code === 'NO_TILES' ? this.tr('noTiles') : this.tr('captureFail', e.message));

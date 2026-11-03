@@ -209,6 +209,10 @@ function normalizeOverlay(raw, template, weatherEnabled) {
     showWind: bool(o.showWind, true),
     showRainStatus: bool(o.showRainStatus, true),
     showTimestamp: bool(o.showTimestamp, true),
+    showSun: bool(o.showSun, false),
+    showWindDir: bool(o.showWindDir, false),
+    showUv: bool(o.showUv, false),
+    autoTheme: bool(o.autoTheme, false),
     forecastDays: Math.round(num(o.forecastDays, 3, 0, 5)),
     hourlyCount: Math.round(num(o.hourlyCount, 0, 0, 8)),
     customCss: css,
@@ -239,8 +243,8 @@ function esc(s) {
 }
 
 const T = {
-  he: { feels: 'מורגש', humidity: 'לחות', wind: 'רוח', raining: 'יורד גשם', dry: 'אין גשם', updated: 'עודכן', today: 'היום', kmh: 'קמ״ש', mph: 'מייל/ש׳', days: ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'] },
-  en: { feels: 'Feels', humidity: 'Humidity', wind: 'Wind', raining: 'Raining now', dry: 'No rain', updated: 'Updated', today: 'Today', kmh: 'km/h', mph: 'mph', days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] },
+  he: { feels: 'מורגש', humidity: 'לחות', wind: 'רוח', raining: 'יורד גשם', dry: 'אין גשם', updated: 'עודכן', today: 'היום', kmh: 'קמ״ש', mph: 'מייל/ש׳', sunrise: 'זריחה', sunset: 'שקיעה', uv: 'UV', days: ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'] },
+  en: { feels: 'Feels', humidity: 'Humidity', wind: 'Wind', raining: 'Raining now', dry: 'No rain', updated: 'Updated', today: 'Today', kmh: 'km/h', mph: 'mph', sunrise: 'Sunrise', sunset: 'Sunset', uv: 'UV', days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] },
 };
 
 function fmt(w, cfg) {
@@ -258,6 +262,13 @@ function fmt(w, cfg) {
   } catch (e) { clock = new Date().toTimeString().slice(0, 5); }
   return { t, unit, lang, cur, d, wind, windUnit: imp ? lang.mph : lang.kmh, clock };
 }
+
+const ARROWS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
+function windArrow(deg) {
+  if (typeof deg !== 'number') return '';
+  return ARROWS[Math.round((((deg + 180) % 360) + 360) % 360 / 45) % 8]; // points where the wind blows to
+}
+function hm(s) { return typeof s === 'string' && s.length >= 16 ? s.slice(11, 16) : '–'; }
 
 function dayName(dateStr, lang, i) {
   if (i === 0) return lang.today;
@@ -293,6 +304,8 @@ function vars(cfg, w) {
     temp: f.t(f.cur.temp), unit: f.unit, icon: o.icons ? f.d.icon : '', desc: f.d.text, feels: f.t(f.cur.feels),
     humidity: f.cur.humidity, wind: f.wind, windUnit: f.windUnit,
     city: cfg.locationName, time: f.clock,
+    sunrise: hm(w.daily && w.daily[0] && w.daily[0].sunrise), sunset: hm(w.daily && w.daily[0] && w.daily[0].sunset),
+    windDir: windArrow(f.cur.windDir), uv: typeof f.cur.uv === 'number' ? Math.round(f.cur.uv) : '–',
     rain: f.cur.raining ? f.lang.raining : f.lang.dry, rainIcon: o.icons ? (f.cur.raining ? '🌧️' : '✔️') : '',
     forecast: forecastHtml(w, cfg, f),
     _f: f, _o: o,
@@ -308,7 +321,7 @@ function render(cfg, w, opts) {
 
   let body;
   if (o.layout === 'custom') {
-    const map = { temp: v.temp, unit: v.unit, icon: v.icon, desc: v.desc, feels: v.feels, humidity: v.humidity, wind: v.wind, windUnit: v.windUnit, city: v.city, time: v.time, rain: v.rain, rainIcon: v.rainIcon, forecast: v.forecast };
+    const map = { temp: v.temp, unit: v.unit, icon: v.icon, desc: v.desc, feels: v.feels, humidity: v.humidity, wind: v.wind, windUnit: v.windUnit, city: v.city, time: v.time, rain: v.rain, rainIcon: v.rainIcon, forecast: v.forecast, sunrise: v.sunrise, sunset: v.sunset, windDir: v.windDir, uv: v.uv };
     body = o.customHtml.replace(/\{\{\s*(\w+)\s*\}\}/g, (m, k) => (k in map ? (k === 'forecast' ? map[k] : esc(map[k])) : m));
   } else {
     const city = o.showCity && v.city ? `<div class="wc-city">${esc(v.city)}</div>` : '';
@@ -317,7 +330,9 @@ function render(cfg, w, opts) {
     const stats = [
       o.showFeelsLike ? `<span>${esc(f.lang.feels)} <b>${v.feels}°</b></span>` : '',
       o.showHumidity ? `<span>${esc(f.lang.humidity)} <b>${v.humidity}%</b></span>` : '',
-      o.showWind ? `<span>${esc(f.lang.wind)} <b>${v.wind}</b> ${esc(v.windUnit)}</span>` : '',
+      o.showWind ? `<span>${esc(f.lang.wind)} <b>${v.wind}</b> ${esc(v.windUnit)}${o.showWindDir && v.windDir ? ' ' + v.windDir : ''}</span>` : '',
+      o.showUv && typeof f.cur.uv === 'number' ? `<span>${esc(f.lang.uv)} <b>${v.uv}</b></span>` : '',
+      o.showSun && w.daily && w.daily[0] && w.daily[0].sunrise ? `<span>${o.icons ? '🌅' : esc(f.lang.sunrise)} <b>${esc(v.sunrise)}</b> ${o.icons ? '🌇' : esc(f.lang.sunset)} <b>${esc(v.sunset)}</b></span>` : '',
     ].filter(Boolean).join('');
     const main = `<div class="wc-main"><span class="wc-icon">${v.icon}</span><span class="wc-temp">${v.temp}<small>${esc(v.unit)}</small></span></div>`;
     if (o.layout === 'compact') {
@@ -330,7 +345,8 @@ function render(cfg, w, opts) {
     }
   }
 
-  const th = THEMES[o.theme];
+  const themeId = o.autoTheme && f.cur.isDay === 0 && o.theme === 'light' ? 'dark' : o.theme; // light card is glaring at night
+  const th = THEMES[themeId];
   const alpha = o.opacity;
   const bg = o.backgroundColor || th.bg.replace('{o}', String(alpha)).replace('{o2}', String(Math.min(0.35, alpha * 0.4)));
   const fg = o.textColor || th.fg;
@@ -352,7 +368,7 @@ function render(cfg, w, opts) {
  transform:${tx} scale(${o.scale});transform-origin:${origin};
  font-family:${o.fontFamily};color:${fg};background:${bg};border:1px solid ${th.border};border-radius:${o.borderRadius}px;
  padding:14px 18px;box-sizing:border-box;backdrop-filter:blur(${th.blur});-webkit-backdrop-filter:blur(${th.blur});
- min-width:${o.layout === 'compact' ? 0 : 190}px;line-height:1.25;text-shadow:${o.theme === 'transparent' || o.theme === 'glass' ? '0 1px 4px rgba(0,0,0,.65)' : 'none'};
+ min-width:${o.layout === 'compact' ? 0 : 190}px;line-height:1.25;text-shadow:${themeId === 'transparent' || themeId === 'glass' ? '0 1px 4px rgba(0,0,0,.65)' : 'none'};
  ${o.layout === 'banner' ? 'text-align:center' : ''}}
 #wc-overlay .wc-city{font-size:20px;font-weight:700;margin-bottom:4px}
 #wc-overlay .wc-main{display:flex;align-items:center;gap:10px}
