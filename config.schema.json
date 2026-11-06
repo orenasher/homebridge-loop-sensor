@@ -9,8 +9,7 @@
       "name": {
         "title": "Platform Name",
         "type": "string",
-        "default": "Loop Sensor",
-        "required": true
+        "default": "Loop Sensor"
       },
       "loops": {
         "title": "Loops",
@@ -21,7 +20,6 @@
             "name": {
               "title": "שם (Name)",
               "type": "string",
-              "required": true,
               "placeholder": "לופ מזגן"
             },
             "switchType": {
@@ -109,8 +107,7 @@
               "title": "זמן (כל כמה זמן / ספירה לאחור)",
               "type": "number",
               "default": 2,
-              "minimum": 1,
-              "required": true
+              "minimum": 1
             },
             "intervalUnit": {
               "title": "יחידות (Units)",
@@ -187,7 +184,11 @@
               "type": "boolean",
               "default": false
             }
-          }
+          },
+          "required": [
+            "name",
+            "interval"
+          ]
         }
       },
       "guards": {
@@ -199,7 +200,6 @@
             "name": {
               "title": "שם",
               "type": "string",
-              "required": true,
               "placeholder": "כיבוי מזגן - חלון פתוח"
             },
             "conditionName": {
@@ -220,8 +220,7 @@
               "title": "אחרי כמה זמן",
               "type": "number",
               "default": 30,
-              "minimum": 1,
-              "required": true
+              "minimum": 1
             },
             "delayUnit": {
               "title": "יחידות",
@@ -295,10 +294,17 @@
               "type": "boolean",
               "default": true
             }
-          }
+          },
+          "required": [
+            "name",
+            "delay"
+          ]
         }
       }
-    }
+    },
+    "required": [
+      "name"
+    ]
   },
   "layout": [
     {
